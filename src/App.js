@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Nav, Footer } from "react-bootstrap";
+import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup } from "react-bootstrap";
 import { MapContainer, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -56,7 +56,7 @@ function App() {
         const res = await fetch("https://epsg.io/" + epsg + ".proj4");
         const text = await res.text();
         if (!text.includes("+proj")) {
-          throw "Request did not return a proj string";
+          throw new Error("Request did not return a proj string");
         }
         proj = text;
         epsgCache.current[epsg] = proj;
@@ -189,7 +189,7 @@ function App() {
 
     <footer className="footer mt-auto py-5 bg-light">
       <Container>
-        <p className="text-muted">Created by <Twitter className="mb-1"/> <a className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
+        <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
       </Container>
     </footer>
 
