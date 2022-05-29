@@ -1,8 +1,10 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup } from "react-bootstrap";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
+import EditControl from "./EditControl";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
 import { React, useState, useMemo, useEffect, useRef } from "react";
 import epsgs from "./epsg";
 import examples from "./examples";
@@ -43,6 +45,45 @@ function App() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <FeatureGroup ref={groupRef}>
+          <EditControl
+            position='topright'
+            draw={{
+              rectangle: false,
+              marker: false,
+              circle: false,
+              polygon: {
+                shapeOptions: {
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: "#3388ff"
+                }
+              },
+              circlemarker: {
+                  opacity: 1,
+                  fillOpacity: 0.2,
+                  weight: 3,
+                  radius: 4,
+                  color: "#3388ff",
+                  fill: "#3388ff"
+              },
+              polyline: {
+                shapeOptions: {
+                    opacity: 1,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: false
+                }
+              }
+            }}
+            edit={{
+              edit: false,
+              remove: false
+            }}
+          />
+        </FeatureGroup>
       </MapContainer>
     ), []
   )
@@ -95,11 +136,6 @@ function App() {
   }
 
   function clearLayerGroup() {
-    if (!groupRef.current && map) {
-      const layerGroup = new L.LayerGroup();
-      groupRef.current = layerGroup;
-      layerGroup.addTo(map);
-    }
     groupRef.current.clearLayers();
   }
 
@@ -120,6 +156,10 @@ function App() {
       const json = geojsonFormat.writeFeatureObject(feature);
       return [json, crs];
     }
+  }
+
+  function handleGenerate() {
+    console.log(groupRef.current.toGeoJSON())
   }
 
   async function handleVisualize() {
@@ -203,6 +243,7 @@ function App() {
               valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
             }
 
+            <Button variant="light" className="me-2" onClick={handleGenerate}>Generate</Button>
             <Button variant="primary" onClick={handleVisualize}>Visualize</Button>
           </Col>
         </Row>
