@@ -29,6 +29,7 @@ function App() {
   const [epsg, setEpsg] = useState(examples[0][1]);
   const [valid, setValid] = useState(null);
 
+  const mapRef = useRef();
   const groupRef = useRef();
   const epsgCache = useRef(epsgs);
 
@@ -36,6 +37,7 @@ function App() {
     () => (
       <MapContainer
         id="map"
+        ref={mapRef}
         center={[10, 0]}
         zoom={1}
         scrollWheelZoom={false}>
@@ -191,7 +193,7 @@ function App() {
       }
     }
     let newLayer = L.geoJSON(json, conf).addTo(groupRef.current);
-    map.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
+    mapRef.current.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
   }
 
   useEffect(() => {
