@@ -65,7 +65,7 @@ function EditControl(props) {
         }
       }
     };
-  }, []);
+  }, []); // eslint-disable-line
 
   React.useEffect(() => {
     if (
@@ -84,7 +84,7 @@ function EditControl(props) {
     const { onMounted } = props;
     onMounted && onMounted(drawRef.current);
 
-  }, [props.draw, props.edit, props.position]);
+  }, [props.draw, props.edit, props.position]); // eslint-disable-line
 
   return null;
 }
