@@ -178,14 +178,14 @@ function App() {
         }
 
         <Row>
-          <Col>
+          <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="wkt">
               <Form.Label>WKT</Form.Label>
               <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
             </Form.Group>
             <Button variant="light" onClick={handleLoadExample}>Load example</Button>
           </Col>
-          <Col>
+          <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="epsg">
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
