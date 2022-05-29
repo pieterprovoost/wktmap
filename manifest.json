@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "WKT visualization",
+  "name": "Wellknown Text (WKT) visualization",
   "icons": [
     {
       "src": "favicon.ico",
