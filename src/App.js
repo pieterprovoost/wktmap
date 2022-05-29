@@ -47,19 +47,19 @@ function App() {
     ), []
   )
 
-  async function fetchProj() {
+  async function fetchProj(crs) {
     let proj;
-    if (epsg in epsgCache.current) {
-      proj = epsgCache.current[epsg];
+    if (crs in epsgCache.current) {
+      proj = epsgCache.current[crs];
     } else {
       try {
-        const res = await fetch("https://epsg.io/" + epsg + ".proj4");
+        const res = await fetch("https://epsg.io/" + crs + ".proj4");
         const text = await res.text();
         if (!text.includes("+proj")) {
           throw new Error("Request did not return a proj string");
         }
         proj = text;
-        epsgCache.current[epsg] = proj;
+        epsgCache.current[crs] = proj;
       } catch (e) {
         console.error(e);
       }
@@ -72,7 +72,7 @@ function App() {
   }
 
   async function handleEpsgValidate() {
-    const proj = await fetchProj();
+    const proj = await fetchProj(epsg);
     if (proj) {
       setValid(proj);
     } else {
@@ -103,15 +103,32 @@ function App() {
     groupRef.current.clearLayers();
   }
 
+  function parseWkt() {
+    if (wkt) {
+      const [, crsPart, wktPart] = wkt.match(/(<.*>)?\s*(.*)/);
+      let crs;
+      if (crsPart) {
+        const matches = crsPart.match(/([0-9]+)(?:>)/);
+        if (matches) {
+          crs = matches[1];
+          setEpsg(crs);
+        }
+      }
+      const wktFormat = new WKT();
+      const feature = wktFormat.readFeature(wktPart);
+      const geojsonFormat = new GeoJSON({});
+      const json = geojsonFormat.writeFeatureObject(feature);
+      return [json, crs];
+    }
+  }
+
   async function handleVisualize() {
     setError(null);
     clearLayerGroup();
     let json;
+    let crs;
     try {
-      const wktFormat = new WKT();
-      const feature = wktFormat.readFeature(wkt);
-      const geojsonFormat = new GeoJSON({});
-      json = geojsonFormat.writeFeatureObject(feature);
+      [json, crs] = parseWkt();
     } catch (e) {
       console.error(e);
       setError("WKT parsing failed");
@@ -120,8 +137,12 @@ function App() {
     const conf = {
       pointToLayer: createCircleMarker,
     };
-    if (epsg !== DEFAULT_EPSG) {
-      const proj = await fetchProj();
+    // use EPSG unless CRS provided by parser
+    if (!crs) {
+      crs = epsg;
+    }
+    if (crs !== DEFAULT_EPSG) {
+      const proj = await fetchProj(crs);
       if (proj) {
         conf.coordsToLatLng = function(coords) {
           const newCoords = proj4(proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
@@ -170,7 +191,7 @@ function App() {
               <InputGroup>
                 <InputGroup.Text id="basic-addon1">EPSG:</InputGroup.Text>
                 <Form.Control value={epsg} onChange={handleEpsgChange} />
-                <Button variant="warning" onClick={handleEpsgClear}>Clear</Button>
+                <Button variant="warning" onClick={handleEpsgClear}>Reset</Button>
                 <Button variant="light" onClick={handleEpsgValidate}>Validate</Button>
               </InputGroup>
             </Form.Group>
@@ -189,7 +210,8 @@ function App() {
 
     <footer className="footer mt-auto py-5 bg-light">
       <Container>
-        <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
+      <p className="text-muted">This page parses and visualizes <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems.</p>
+      <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
       </Container>
     </footer>
 
