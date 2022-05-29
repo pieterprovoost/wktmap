@@ -152,7 +152,8 @@ function App() {
         setError("EPSG not found");
       }
     }
-    L.geoJSON(json, conf).addTo(groupRef.current);
+    let newLayer = L.geoJSON(json, conf).addTo(groupRef.current);
+    map.fitBounds(newLayer.getBounds());
   }
 
   useEffect(() => {
