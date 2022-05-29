@@ -24,7 +24,6 @@ function createCircleMarker(feature, latlng) {
 
 function App() {
 
-  const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
   const [wkt, setWkt] = useState(examples[0][0]);
   const [epsg, setEpsg] = useState(examples[0][1]);
@@ -39,8 +38,7 @@ function App() {
         id="map"
         center={[10, 0]}
         zoom={1}
-        scrollWheelZoom={false}
-        ref={setMap}>
+        scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
