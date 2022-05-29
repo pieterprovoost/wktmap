@@ -153,7 +153,7 @@ function App() {
       }
     }
     let newLayer = L.geoJSON(json, conf).addTo(groupRef.current);
-    map.fitBounds(newLayer.getBounds());
+    map.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
   }
 
   useEffect(() => {
@@ -209,7 +209,7 @@ function App() {
         </Row>
       </Container>
 
-    <footer className="footer mt-auto py-5 bg-light">
+    <footer className="footer mt-auto pt-5 pb-4 bg-light">
       <Container>
       <p className="text-muted">This page parses and visualizes <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems.</p>
       <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
