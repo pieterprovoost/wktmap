@@ -25,8 +25,8 @@ function App() {
 
   const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
-  const [wkt, setWkt] = useState(examples[0][0]);
-  const [epsg, setEpsg] = useState(examples[0][1]);
+  const [wkt, setWkt] = useState("");
+  const [epsg, setEpsg] = useState("");
   const [valid, setValid] = useState(null);
 
   const groupRef = useRef();
@@ -166,6 +166,29 @@ function App() {
   useEffect(() => {
     setValid(null);
   }, [ epsg ]);
+
+  useEffect(() => {
+    if (wkt !== "" || epsg !== "") {
+      const params = new URLSearchParams({wkt, epsg}).toString();
+      if (params.length < 2000) {
+        window.history.replaceState(null, null, "?" + params);
+      } else {
+        window.history.replaceState(null, null, "/");
+      }
+    }
+  }, [epsg, wkt]);
+
+  useEffect(() => {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    if (Object.keys(params).length === 0) {
+      setWkt(examples[0][0]);
+      setEpsg(examples[0][1]);
+    } else {
+      setWkt(params.wkt ? params.wkt : "");
+      setEpsg(params.epsg ? params.epsg : "");
+    }
+  }, []);
 
   return (
     <div id="app">
