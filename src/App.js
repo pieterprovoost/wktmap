@@ -134,7 +134,7 @@ function App() {
       [json, crs] = parseWkt();
     } catch (e) {
       if (e instanceof CRSNotSupportedError) {
-        setError("CRS URI not supported (only OpenGIS for now)");
+        setError("CRS URI not supported (only OpenGIS EPSG for now)");
       } else {
         console.error(e);
         setError("WKT parsing failed");
