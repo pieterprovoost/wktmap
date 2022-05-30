@@ -6,12 +6,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import { React, useState, useMemo, useEffect, useRef } from "react";
-import epsgs from "./epsg";
+import epsgList from "./epsg";
+import crsList from "./crs";
 import examples from "./examples";
 import proj4 from "proj4";
 import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
+import { CRSNotSupportedError } from "./errors";
 
 const DEFAULT_EPSG = "4326";
 
@@ -25,13 +27,14 @@ function createCircleMarker(feature, latlng) {
 function App() {
 
   const [error, setError] = useState(null);
-  const [wkt, setWkt] = useState(examples[0][0]);
-  const [epsg, setEpsg] = useState(examples[0][1]);
+  const [wkt, setWkt] = useState("");
+  const [epsg, setEpsg] = useState("");
   const [valid, setValid] = useState(null);
+  const [exampleIndex, setExampleIndex] = useState(0);
 
   const mapRef = useRef();
   const groupRef = useRef();
-  const epsgCache = useRef(epsgs);
+  const epsgCache = useRef(epsgList);
 
   const displayMap = useMemo(
     () => (
@@ -88,19 +91,19 @@ function App() {
     ), []
   )
 
-  async function fetchProj(crs) {
+  async function fetchProj(inputEpsg) {
     let proj;
-    if (crs in epsgCache.current) {
-      proj = epsgCache.current[crs];
+    if (inputEpsg in epsgCache.current) {
+      proj = epsgCache.current[inputEpsg];
     } else {
       try {
-        const res = await fetch("https://epsg.io/" + crs + ".proj4");
+        const res = await fetch("https://epsg.io/" + inputEpsg + ".proj4");
         const text = await res.text();
         if (!text.includes("+proj")) {
           throw new Error("Request did not return a proj string");
         }
         proj = text;
-        epsgCache.current[crs] = proj;
+        epsgCache.current[inputEpsg] = proj;
       } catch (e) {
         console.error(e);
       }
@@ -130,9 +133,11 @@ function App() {
   }
 
   function handleLoadExample() {
-    const example = examples[Math.floor(Math.random() * examples.length)];
+    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
+    const example = examples[newIndex];
     setWkt(example[0]);
     setEpsg(example[1]);
+    setExampleIndex(newIndex);
   }
 
   function clearLayerGroup() {
@@ -142,19 +147,25 @@ function App() {
   function parseWkt() {
     if (wkt) {
       const [, crsPart, wktPart] = wkt.match(/(<.*>)?\s*(.*)/);
-      let crs;
+      let parsedEpsg;
       if (crsPart) {
-        const matches = crsPart.match(/([0-9]+)(?:>)/);
-        if (matches) {
-          crs = matches[1];
-          setEpsg(crs);
+        const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
+        const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
+        if (cleanCrsPart in crsList) {
+          parsedEpsg = crsList[cleanCrsPart];
+          setEpsg(parsedEpsg);
+        } else if (matches) {
+          parsedEpsg = matches[1];
+          setEpsg(parsedEpsg);
+        } else {
+          throw new CRSNotSupportedError();
         }
       }
       const wktFormat = new WKT();
       const feature = wktFormat.readFeature(wktPart);
       const geojsonFormat = new GeoJSON({});
       const json = geojsonFormat.writeFeatureObject(feature);
-      return [json, crs];
+      return [json, parsedEpsg];
     }
   }
 
@@ -170,8 +181,12 @@ function App() {
     try {
       [json, crs] = parseWkt();
     } catch (e) {
-      console.error(e);
-      setError("WKT parsing failed");
+      if (e instanceof CRSNotSupportedError) {
+        setError("CRS URI not supported (only OpenGIS EPSG for now)");
+      } else {
+        console.error(e);
+        setError("WKT parsing failed");
+      }
       return;
     }
     const conf = {
@@ -199,6 +214,29 @@ function App() {
   useEffect(() => {
     setValid(null);
   }, [ epsg ]);
+
+  useEffect(() => {
+    if (wkt !== "" || epsg !== "") {
+      const params = new URLSearchParams({wkt, epsg}).toString();
+      if (params.length < 2000) {
+        window.history.replaceState(null, null, "?" + params);
+      } else {
+        window.history.replaceState(null, null, "/");
+      }
+    }
+  }, [epsg, wkt]);
+
+  useEffect(() => {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    if (Object.keys(params).length === 0) {
+      setWkt(examples[0][0]);
+      setEpsg(examples[0][1]);
+    } else {
+      setWkt(params.wkt ? params.wkt : "");
+      setEpsg(params.epsg ? params.epsg : "");
+    }
+  }, []);
 
   return (
     <div id="app">
