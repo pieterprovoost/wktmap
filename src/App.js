@@ -92,6 +92,7 @@ function App() {
     const example = examples[Math.floor(Math.random() * examples.length)];
     setWkt(example[0]);
     setEpsg(example[1]);
+    handleVisualize();
   }
 
   function clearLayerGroup() {
@@ -157,6 +158,10 @@ function App() {
   }
 
   useEffect(() => {
+    handleVisualize();
+  }, [ wkt ]);
+  
+  useEffect(() => {
     setValid(null);
   }, [ epsg ]);
 
@@ -203,8 +208,6 @@ function App() {
             {
               valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
             }
-
-            <Button variant="primary" onClick={handleVisualize}>Visualize</Button>
           </Col>
         </Row>
       </Container>
