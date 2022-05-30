@@ -29,6 +29,7 @@ function App() {
   const [wkt, setWkt] = useState("");
   const [epsg, setEpsg] = useState("");
   const [valid, setValid] = useState(null);
+  const [exampleIndex, setExampleIndex] = useState(0);
 
   const groupRef = useRef();
   const epsgCache = useRef(epsgList);
@@ -91,9 +92,11 @@ function App() {
   }
 
   function handleLoadExample() {
-    const example = examples[Math.floor(Math.random() * examples.length)];
+    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
+    const example = examples[newIndex];
     setWkt(example[0]);
     setEpsg(example[1]);
+    setExampleIndex(newIndex);
   }
 
   function clearLayerGroup() {
