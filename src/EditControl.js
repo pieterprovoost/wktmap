@@ -2,7 +2,6 @@
 Modified from https://github.com/alex3165/react-leaflet-draw
 until react-leaflet-draw adds React 18 support.
 */
-import { PropTypes } from 'prop-types';
 import Draw from 'leaflet-draw'; // eslint-disable-line
 import isEqual from 'fast-deep-equal';
 import React, { useRef } from 'react';
@@ -109,40 +108,5 @@ function createDrawElement(props, context) {
 
   return new Control.Draw(options);
 }
-
-EditControl.propTypes = {
-  ...Object.keys(eventHandlers).reduce((acc, val) => {
-    acc[val] = PropTypes.func;
-    return acc;
-  }, {}),
-  onCreated: PropTypes.func,
-  onMounted: PropTypes.func,
-  draw: PropTypes.shape({
-    polyline: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    polygon: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    rectangle: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    circle: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    marker: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-  }),
-  edit: PropTypes.shape({
-    edit: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    remove: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    poly: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-    allowIntersection: PropTypes.bool,
-  }),
-  position: PropTypes.oneOf([
-    'topright',
-    'topleft',
-    'bottomright',
-    'bottomleft',
-  ]),
-  leaflet: PropTypes.shape({
-    map: PropTypes.instanceOf(Map),
-    layerContainer: PropTypes.shape({
-      addLayer: PropTypes.func.isRequired,
-      removeLayer: PropTypes.func.isRequired,
-    }),
-  }),
-};
 
 export default EditControl;
