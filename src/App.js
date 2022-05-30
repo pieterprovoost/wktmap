@@ -4,7 +4,8 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { React, useState, useMemo, useEffect, useRef } from "react";
-import epsgs from "./epsg";
+import epsgList from "./epsg";
+import crsList from "./crs";
 import examples from "./examples";
 import proj4 from "proj4";
 import WKT from "ol/format/WKT";
@@ -30,7 +31,7 @@ function App() {
   const [valid, setValid] = useState(null);
 
   const groupRef = useRef();
-  const epsgCache = useRef(epsgs);
+  const epsgCache = useRef(epsgList);
 
   const displayMap = useMemo(
     () => (
@@ -48,19 +49,19 @@ function App() {
     ), []
   )
 
-  async function fetchProj(crs) {
+  async function fetchProj(inputEpsg) {
     let proj;
-    if (crs in epsgCache.current) {
-      proj = epsgCache.current[crs];
+    if (inputEpsg in epsgCache.current) {
+      proj = epsgCache.current[inputEpsg];
     } else {
       try {
-        const res = await fetch("https://epsg.io/" + crs + ".proj4");
+        const res = await fetch("https://epsg.io/" + inputEpsg + ".proj4");
         const text = await res.text();
         if (!text.includes("+proj")) {
           throw new Error("Request did not return a proj string");
         }
         proj = text;
-        epsgCache.current[crs] = proj;
+        epsgCache.current[inputEpsg] = proj;
       } catch (e) {
         console.error(e);
       }
@@ -107,12 +108,16 @@ function App() {
   function parseWkt() {
     if (wkt) {
       const [, crsPart, wktPart] = wkt.match(/(<.*>)?\s*(.*)/);
-      let crs;
+      let parsedEpsg;
       if (crsPart) {
+        const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
         const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
-        if (matches) {
-          crs = matches[1];
-          setEpsg(crs);
+        if (cleanCrsPart in crsList) {
+          parsedEpsg = crsList[cleanCrsPart];
+          setEpsg(parsedEpsg);
+        } else if (matches) {
+          parsedEpsg = matches[1];
+          setEpsg(parsedEpsg);
         } else {
           throw new CRSNotSupportedError();
         }
@@ -121,7 +126,7 @@ function App() {
       const feature = wktFormat.readFeature(wktPart);
       const geojsonFormat = new GeoJSON({});
       const json = geojsonFormat.writeFeatureObject(feature);
-      return [json, crs];
+      return [json, parsedEpsg];
     }
   }
 
