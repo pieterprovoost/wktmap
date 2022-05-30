@@ -10,6 +10,7 @@ import proj4 from "proj4";
 import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
+import { CRSNotSupportedError } from "./errors";
 
 const DEFAULT_EPSG = "4326";
 
@@ -108,10 +109,12 @@ function App() {
       const [, crsPart, wktPart] = wkt.match(/(<.*>)?\s*(.*)/);
       let crs;
       if (crsPart) {
-        const matches = crsPart.match(/([0-9]+)(?:>)/);
+        const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
         if (matches) {
           crs = matches[1];
           setEpsg(crs);
+        } else {
+          throw new CRSNotSupportedError();
         }
       }
       const wktFormat = new WKT();
@@ -130,8 +133,12 @@ function App() {
     try {
       [json, crs] = parseWkt();
     } catch (e) {
-      console.error(e);
-      setError("WKT parsing failed");
+      if (e instanceof CRSNotSupportedError) {
+        setError("CRS URI not supported (only OpenGIS for now)");
+      } else {
+        console.error(e);
+        setError("WKT parsing failed");
+      }
       return;
     }
     const conf = {
