@@ -145,6 +145,17 @@ function App() {
         setError("CRS URI not supported (only OpenGIS EPSG for now)");
       } else {
         console.error(e);
+        let matches;
+        matches = e.message.match(/(Unexpected .* at position.*)(?:\sin.*)/);
+        if (matches) {
+          setError("WKT parsing failed: " + matches[1]);
+          return;
+        }
+        matches = e.message.match(/(Invalid geometry type.*)/);
+        if (matches) {
+          setError("WKT parsing failed: " + matches[1]);
+          return;
+        }
         setError("WKT parsing failed");
       }
       return;
