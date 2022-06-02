@@ -14,6 +14,7 @@ import { Twitter } from "react-bootstrap-icons";
 import { CRSNotSupportedError } from "./errors";
 
 const DEFAULT_EPSG = "4326";
+const MAX_CHARACTERS = 4000;
 
 function createCircleMarker(feature, latlng) {
   let options = {
@@ -189,7 +190,7 @@ function App() {
   useEffect(() => {
     if (wkt !== "" || epsg !== "") {
       const params = new URLSearchParams({wkt, epsg}).toString();
-      if (params.length < 2000) {
+      if (params.length < MAX_CHARACTERS) {
         window.history.replaceState(null, null, "?" + params);
       } else {
         window.history.replaceState(null, null, "/");
