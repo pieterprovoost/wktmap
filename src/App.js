@@ -12,6 +12,7 @@ import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
 import { CRSNotSupportedError } from "./errors";
+import FullscreenControl from "./FullscreenControl";
 
 const DEFAULT_EPSG = "4326";
 const MAX_CHARACTERS = 4000;
@@ -41,12 +42,13 @@ function App() {
         id="map"
         center={[10, 0]}
         zoom={1}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
         ref={setMap}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <FullscreenControl />
       </MapContainer>
     ), []
   )
