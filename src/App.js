@@ -27,6 +27,7 @@ function App() {
 
   const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
+  const [epsg, setEpsg] = useState("");
   const [spatial, setSpatial] = useState({
     wkt: "",
     epsg: "",
@@ -76,6 +77,7 @@ function App() {
       ...spatial,
       epsg: DEFAULT_EPSG
     });
+    setEpsg(DEFAULT_EPSG);
   }
 
   async function handleEpsgValidate() {
@@ -92,6 +94,37 @@ function App() {
       ...spatial,
       wkt: e.target.value
     });
+  }
+
+  function handleEpsgChange(e) {
+    setEpsg(e.target.value);
+  }
+
+  function updateEpsg() {
+    validateAndUpdateSpatial({
+      ...spatial,
+      epsg: epsg
+    });
+  }
+
+  function handleLoadExample() {
+    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
+    const example = examples[newIndex];
+    validateAndUpdateSpatial({
+      wkt: example[0],
+      epsg: example[1]
+    });
+    setEpsg(example[1]);
+    setExampleIndex(newIndex);
+    visualize();
+  }
+
+  function parseWkt(wkt) {
+    const wktFormat = new WKT();
+    const feature = wktFormat.readFeature(wkt);
+    const geojsonFormat = new GeoJSON({});
+    const json = geojsonFormat.writeFeatureObject(feature);
+    return json;
   }
 
   async function validateAndUpdateSpatial(input) {
@@ -128,6 +161,7 @@ function App() {
         ...input,
         epsg: parsedEpsg
       };
+      setEpsg(parsedEpsg);
     }
 
     // get proj
@@ -160,32 +194,6 @@ function App() {
     // update
 
     setSpatial(input);
-  }
-
-  function handleEpsgChange(e) {
-    validateAndUpdateSpatial({
-      ...spatial,
-      epsg: e.target.value
-    });
-  }
-
-  function handleLoadExample() {
-    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
-    const example = examples[newIndex];
-    validateAndUpdateSpatial({
-      wkt: example[0],
-      epsg: example[1]
-    });
-    setExampleIndex(newIndex);
-    visualize();
-  }
-
-  function parseWkt(wkt) {
-    const wktFormat = new WKT();
-    const feature = wktFormat.readFeature(wkt);
-    const geojsonFormat = new GeoJSON({});
-    const json = geojsonFormat.writeFeatureObject(feature);
-    return json;
   }
 
   async function visualize() {
@@ -238,11 +246,13 @@ function App() {
         wkt: examples[0][0],
         epsg: examples[0][1]
       });
+      setEpsg(examples[0][1]);
     } else {
       validateAndUpdateSpatial({
         wkt: params.wkt ? params.wkt : "",
         epsg: params.epsg ? params.epsg : ""
       });
+      setEpsg(params.epsg ? params.epsg : "");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -273,7 +283,7 @@ function App() {
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
                 <InputGroup.Text id="basic-addon1">EPSG:</InputGroup.Text>
-                <Form.Control value={spatial.epsg} onChange={handleEpsgChange} />
+                <Form.Control value={epsg} onChange={handleEpsgChange} onBlur={updateEpsg} />
                 <Button variant="warning" onClick={handleEpsgClear}>Default</Button>
                 <Button variant="light" onClick={handleEpsgValidate}>Validate</Button>
               </InputGroup>
