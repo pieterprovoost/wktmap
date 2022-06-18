@@ -28,8 +28,12 @@ function App() {
 
   const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
-  const [wkt, setWkt] = useState("");
-  const [epsg, setEpsg] = useState("");
+  //const [wkt, setWkt] = useState("");
+  //const [epsg, setEpsg] = useState("");
+  const [spatial, setSpatial] = useState({
+    wkt: "",
+    epsg: ""
+  });
   const [valid, setValid] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
 
@@ -74,11 +78,14 @@ function App() {
   }
   
   function handleEpsgClear() {
-    setEpsg(DEFAULT_EPSG);
+    setSpatial({
+      ...spatial,
+      epsg: DEFAULT_EPSG
+    });
   }
 
   async function handleEpsgValidate() {
-    const proj = await fetchProj(epsg);
+    const proj = await fetchProj(spatial.epsg);
     if (proj) {
       setValid(proj);
     } else {
@@ -87,18 +94,26 @@ function App() {
   }
 
   function handleWktChange(e) {
-    setWkt(e.target.value);
+    setSpatial({
+      ...spatial,
+      wkt: e.target.value
+    });
   }
 
   function handleEpsgChange(e) {
-    setEpsg(e.target.value);
+    setSpatial({
+      ...spatial,
+      epsg: e.target.value
+    });
   }
 
   function handleLoadExample() {
     const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
     const example = examples[newIndex];
-    setWkt(example[0]);
-    setEpsg(example[1]);
+    setSpatial({
+      wkt: example[0],
+      epsg: example[1]
+    });
     setExampleIndex(newIndex);
   }
 
@@ -112,18 +127,24 @@ function App() {
   }
 
   function parseWkt() {
-    if (wkt) {
-      const [, crsPart, wktPart] = wkt.match(/(<.*>)?\s*(.*)/);
+    if (spatial && spatial.wkt) {
+      const [, crsPart, wktPart] = spatial.wkt.match(/(<.*>)?\s*(.*)/);
       let parsedEpsg;
       if (crsPart) {
         const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
         const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
         if (cleanCrsPart in crsList) {
           parsedEpsg = crsList[cleanCrsPart];
-          setEpsg(parsedEpsg);
+          setSpatial({
+            ...spatial,
+            epsg: parsedEpsg
+          });
         } else if (matches) {
           parsedEpsg = matches[1];
-          setEpsg(parsedEpsg);
+          setSpatial({
+            ...spatial,
+            epsg: parsedEpsg
+          });
         } else {
           throw new CRSNotSupportedError();
         }
@@ -168,7 +189,7 @@ function App() {
     };
     // use EPSG unless CRS provided by parser
     if (!crs) {
-      crs = epsg;
+      crs = spatial.epsg;
     }
     if (crs !== DEFAULT_EPSG) {
       const proj = await fetchProj(crs);
@@ -187,28 +208,30 @@ function App() {
 
   useEffect(() => {
     setValid(null);
-  }, [ epsg ]);
 
-  useEffect(() => {
-    if (wkt !== "" || epsg !== "") {
-      const params = new URLSearchParams({wkt, epsg}).toString();
+    if (spatial.wkt !== "" || spatial.epsg !== "") {
+      const params = new URLSearchParams(spatial).toString();
       if (params.length < MAX_CHARACTERS) {
         window.history.replaceState(null, null, "?" + params);
       } else {
         window.history.replaceState(null, null, "/");
       }
     }
-  }, [epsg, wkt]);
+  }, [spatial]);
 
   useEffect(() => {
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
     if (Object.keys(params).length === 0) {
-      setWkt(examples[0][0]);
-      setEpsg(examples[0][1]);
+      setSpatial({
+        wkt: examples[0][0],
+        epsg: examples[0][1]
+      });
     } else {
-      setWkt(params.wkt ? params.wkt : "");
-      setEpsg(params.epsg ? params.epsg : "");
+      setSpatial({
+        wkt: params.wkt ? params.wkt : "",
+        epsg: params.epsg ? params.epsg : ""
+      });
     }
   }, []);
 
@@ -234,7 +257,7 @@ function App() {
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="wkt">
               <Form.Label>WKT</Form.Label>
-              <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
+              <Form.Control className="font-monospace" as="textarea" rows={8} value={spatial.wkt} onChange={handleWktChange} />
             </Form.Group>
             <Button variant="light" onClick={handleLoadExample}>Load example</Button>
           </Col>
@@ -243,7 +266,7 @@ function App() {
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
                 <InputGroup.Text id="basic-addon1">EPSG:</InputGroup.Text>
-                <Form.Control value={epsg} onChange={handleEpsgChange} />
+                <Form.Control value={spatial.epsg} onChange={handleEpsgChange} />
                 <Button variant="warning" onClick={handleEpsgClear}>Reset</Button>
                 <Button variant="light" onClick={handleEpsgValidate}>Validate</Button>
               </InputGroup>
