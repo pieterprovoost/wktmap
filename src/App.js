@@ -292,9 +292,6 @@ function App() {
             </Form.Group>
 
             {
-              valid === false && <Alert variant="danger">EPSG not found</Alert>
-            }
-            {
               valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
             }
             {
