@@ -30,7 +30,8 @@ function App() {
   const [spatial, setSpatial] = useState({
     wkt: "",
     epsg: "",
-    proj: null
+    proj: null,
+    json: null
   });
   const [valid, setValid] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
@@ -214,7 +215,7 @@ function App() {
 
   useEffect(() => {
     visualize();
-  }, [ spatial ]);
+  }, [ spatial ]); // eslint-disable-line react-hooks/exhaustive-deps
   
   useEffect(() => {
     setValid(null);
@@ -243,7 +244,7 @@ function App() {
         epsg: params.epsg ? params.epsg : ""
       });
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div id="app">
