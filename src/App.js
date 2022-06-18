@@ -207,7 +207,7 @@ function App() {
           }
         }
         let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
-        map.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
+        map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
       }
     }
   }
@@ -220,7 +220,7 @@ function App() {
     setValid(null);
 
     if (spatial.wkt !== "" || spatial.epsg !== "") {
-      const params = new URLSearchParams(spatial).toString();
+      const params = new URLSearchParams({wkt: spatial.wkt, epsg: spatial.epsg}).toString();
       if (params.length < MAX_CHARACTERS) {
         window.history.replaceState(null, null, "?" + params);
       } else {
