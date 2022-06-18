@@ -80,6 +80,13 @@ function App() {
     setEpsg(DEFAULT_EPSG);
   }
 
+  function handleWktClear() {
+    validateAndUpdateSpatial({
+      ...spatial,
+      wkt: ""
+    });
+  }
+
   async function handleEpsgValidate() {
     const proj = await fetchProj(spatial.epsg);
     if (proj) {
@@ -277,6 +284,7 @@ function App() {
               <Form.Control className="font-monospace" as="textarea" rows={8} value={spatial.wkt} onChange={handleWktChange} />
             </Form.Group>
             <Button variant="light" onClick={handleLoadExample}>Load example</Button>
+            <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
           </Col>
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="epsg">
