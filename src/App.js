@@ -139,7 +139,7 @@ function App() {
 
     // parse WKT
     
-    if (input.proj) {
+    if (input.proj && wktPart !== "") {
       try {
         input.json = parseWkt(wktPart);
       } catch (e) {
