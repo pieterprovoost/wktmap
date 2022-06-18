@@ -233,7 +233,6 @@ function App() {
   
   useEffect(() => {
     setValid(null);
-
     if (spatial.wkt !== "" || spatial.epsg !== "") {
       const params = new URLSearchParams({wkt: spatial.wkt, epsg: spatial.epsg}).toString();
       if (params.length < MAX_CHARACTERS) {
@@ -252,8 +251,9 @@ function App() {
     } else {
       validateAndUpdateSpatial({
         wkt: params.wkt ? params.wkt : "",
-        epsg: params.epsg ? params.epsg : ""
+        epsg: params.epsg ? params.epsg : DEFAULT_EPSG
       });
+      setEpsg(params.epsg ? params.epsg : DEFAULT_EPSG);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
