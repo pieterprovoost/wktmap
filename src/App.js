@@ -249,19 +249,11 @@ function App() {
     const params = Object.fromEntries(urlSearchParams.entries());
     if (Object.keys(params).length === 0) {
       handleLoadExample();
-      /*
-      validateAndUpdateSpatial({
-        wkt: examples[0][0],
-        epsg: examples[0][1]
-      });
-      */
-      //setEpsg(examples[0][1]);
     } else {
       validateAndUpdateSpatial({
         wkt: params.wkt ? params.wkt : "",
         epsg: params.epsg ? params.epsg : ""
       });
-      //setEpsg(params.epsg ? params.epsg : "");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
