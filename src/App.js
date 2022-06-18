@@ -113,6 +113,7 @@ function App() {
       epsg: example[1]
     });
     setExampleIndex(newIndex);
+    handleVisualize();
   }
 
   function clearLayerGroup() {
@@ -205,6 +206,10 @@ function App() {
   }
 
   useEffect(() => {
+    handleVisualize();
+  }, [ wkt ]);
+  
+  useEffect(() => {
     setValid(null);
 
     if (spatial.wkt !== "" || spatial.epsg !== "") {
@@ -276,8 +281,6 @@ function App() {
             {
               valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
             }
-
-            <Button variant="primary" onClick={handleVisualize}>Visualize</Button>
           </Col>
         </Row>
       </Container>
