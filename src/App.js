@@ -11,7 +11,6 @@ import proj4 from "proj4";
 import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
-import { CRSNotSupportedError } from "./errors";
 import FullscreenControl from "./FullscreenControl";
 
 const DEFAULT_EPSG = "4326";
@@ -30,7 +29,8 @@ function App() {
   const [error, setError] = useState(null);
   const [spatial, setSpatial] = useState({
     wkt: "",
-    epsg: ""
+    epsg: "",
+    proj: null
   });
   const [valid, setValid] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
@@ -60,23 +60,18 @@ function App() {
     if (inputEpsg in epsgCache.current) {
       proj = epsgCache.current[inputEpsg];
     } else {
-      try {
-        const res = await fetch("https://epsg.io/" + inputEpsg + ".proj4");
-        const text = await res.text();
-        if (!text.includes("+proj")) {
-          throw new Error("Request did not return a proj string");
-        }
+      const res = await fetch("https://epsg.io/" + inputEpsg + ".proj4");
+      const text = await res.text();
+      if (text.includes("+proj")) {
         proj = text;
         epsgCache.current[inputEpsg] = proj;
-      } catch (e) {
-        console.error(e);
       }
     }
     return proj;
   }
   
   function handleEpsgClear() {
-    setSpatial({
+    validateAndUpdateSpatial({
       ...spatial,
       epsg: DEFAULT_EPSG
     });
@@ -92,14 +87,82 @@ function App() {
   }
 
   function handleWktChange(e) {
-    setSpatial({
+    validateAndUpdateSpatial({
       ...spatial,
       wkt: e.target.value
     });
   }
 
+  async function validateAndUpdateSpatial(input) {
+
+    setError(null);
+    input = {
+      ...input,
+      proj: null,
+      json: null
+    }
+
+    // split input
+
+    const [, crsPart, wktPart] = input.wkt.match(/(<.*>)?\s*(.*)/);
+    
+    // parse EPSG if in WKT
+
+    let parsedEpsg;
+    
+    if (crsPart) {
+      const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
+      const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
+      if (cleanCrsPart in crsList) {
+        parsedEpsg = crsList[cleanCrsPart];
+      } else if (matches) {
+        parsedEpsg = matches[1];
+      } else {
+        setError("CRS URI not supported (only OpenGIS EPSG for now)");
+      }
+    }
+    
+    if (parsedEpsg) {
+      input = {
+        ...input,
+        epsg: parsedEpsg
+      };
+    }
+
+    // get proj
+
+    input.proj = await fetchProj(input.epsg);
+    if (!input.proj) {
+      setError("EPSG not found");
+    }
+
+    // parse WKT
+    
+    if (input.proj) {
+      try {
+        input.json = parseWkt(wktPart);
+      } catch (e) {
+        let matches;
+        let error = "WKT parsing failed";
+        matches = e.message.match(/(Unexpected .* at position.*)(?:\sin.*)/);
+        if (matches) {
+          error = "WKT parsing failed: " + matches[1];
+        }
+        matches = e.message.match(/(Invalid geometry type.*)/);
+        if (matches) {
+          error = "WKT parsing failed: " + matches[1];
+        }
+        setError(error);
+      }
+    }
+
+    // update
+
+    setSpatial(input);
+  }
+
   function handleEpsgChange(e) {
-    setSpatial({
+    validateAndUpdateSpatial({
       ...spatial,
       epsg: e.target.value
     });
@@ -108,106 +171,50 @@ function App() {
   function handleLoadExample() {
     const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
     const example = examples[newIndex];
-    setSpatial({
+    validateAndUpdateSpatial({
       wkt: example[0],
       epsg: example[1]
     });
     setExampleIndex(newIndex);
-    handleVisualize();
+    visualize();
   }
 
-  function clearLayerGroup() {
-    if (!groupRef.current && map) {
-      const layerGroup = new L.LayerGroup();
-      groupRef.current = layerGroup;
-      layerGroup.addTo(map);
-    }
-    groupRef.current.clearLayers();
+  function parseWkt(wkt) {
+    const wktFormat = new WKT();
+    const feature = wktFormat.readFeature(wkt);
+    const geojsonFormat = new GeoJSON({});
+    const json = geojsonFormat.writeFeatureObject(feature);
+    return json;
   }
 
-  function parseWkt() {
-    if (spatial && spatial.wkt) {
-      const [, crsPart, wktPart] = spatial.wkt.match(/(<.*>)?\s*(.*)/);
-      let parsedEpsg;
-      if (crsPart) {
-        const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
-        const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
-        if (cleanCrsPart in crsList) {
-          parsedEpsg = crsList[cleanCrsPart];
-          setSpatial({
-            ...spatial,
-            epsg: parsedEpsg
-          });
-        } else if (matches) {
-          parsedEpsg = matches[1];
-          setSpatial({
-            ...spatial,
-            epsg: parsedEpsg
-          });
-        } else {
-          throw new CRSNotSupportedError();
-        }
+  async function visualize() {
+    if (map) {
+      if (!groupRef.current) {
+        const layerGroup = new L.LayerGroup();
+        groupRef.current = layerGroup;
+        layerGroup.addTo(map);
       }
-      const wktFormat = new WKT();
-      const feature = wktFormat.readFeature(wktPart);
-      const geojsonFormat = new GeoJSON({});
-      const json = geojsonFormat.writeFeatureObject(feature);
-      return [json, parsedEpsg];
-    }
-  }
+      groupRef.current.clearLayers();
 
-  async function handleVisualize() {
-    setError(null);
-    clearLayerGroup();
-    let json;
-    let crs;
-    try {
-      [json, crs] = parseWkt();
-    } catch (e) {
-      if (e instanceof CRSNotSupportedError) {
-        setError("CRS URI not supported (only OpenGIS EPSG for now)");
-      } else {
-        console.error(e);
-        let matches;
-        matches = e.message.match(/(Unexpected .* at position.*)(?:\sin.*)/);
-        if (matches) {
-          setError("WKT parsing failed: " + matches[1]);
-          return;
+      if (spatial.json) {
+        const conf = {
+          pointToLayer: createCircleMarker,
+        };
+        if (spatial.proj) {
+          conf.coordsToLatLng = function(coords) {
+            const newCoords = proj4(spatial.proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
+            return new L.LatLng(newCoords[1], newCoords[0]);
+          }
         }
-        matches = e.message.match(/(Invalid geometry type.*)/);
-        if (matches) {
-          setError("WKT parsing failed: " + matches[1]);
-          return;
-        }
-        setError("WKT parsing failed");
-      }
-      return;
-    }
-    const conf = {
-      pointToLayer: createCircleMarker,
-    };
-    // use EPSG unless CRS provided by parser
-    if (!crs) {
-      crs = spatial.epsg;
-    }
-    if (crs !== DEFAULT_EPSG) {
-      const proj = await fetchProj(crs);
-      if (proj) {
-        conf.coordsToLatLng = function(coords) {
-          const newCoords = proj4(proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
-          return new L.LatLng(newCoords[1], newCoords[0]);
-        }
-      } else {
-        setError("EPSG not found");
+        let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
+        map.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
       }
     }
-    let newLayer = L.geoJSON(json, conf).addTo(groupRef.current);
-    map.flyToBounds(newLayer.getBounds(), { duration: 0.5 });
   }
 
   useEffect(() => {
-    handleVisualize();
-  }, [ wkt ]);
+    visualize();
+  }, [ spatial ]);
   
   useEffect(() => {
     setValid(null);
@@ -226,12 +233,12 @@ function App() {
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
     if (Object.keys(params).length === 0) {
-      setSpatial({
+      validateAndUpdateSpatial({
         wkt: examples[0][0],
         epsg: examples[0][1]
       });
     } else {
-      setSpatial({
+      validateAndUpdateSpatial({
         wkt: params.wkt ? params.wkt : "",
         epsg: params.epsg ? params.epsg : ""
       });
@@ -252,10 +259,6 @@ function App() {
 
       <Container className="mt-3 mb-3">
 
-        {
-          error && <Alert variant="danger">{error}</Alert>
-        }
-
         <Row>
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="wkt">
@@ -270,7 +273,7 @@ function App() {
               <InputGroup>
                 <InputGroup.Text id="basic-addon1">EPSG:</InputGroup.Text>
                 <Form.Control value={spatial.epsg} onChange={handleEpsgChange} />
-                <Button variant="warning" onClick={handleEpsgClear}>Reset</Button>
+                <Button variant="warning" onClick={handleEpsgClear}>Default</Button>
                 <Button variant="light" onClick={handleEpsgValidate}>Validate</Button>
               </InputGroup>
             </Form.Group>
@@ -281,6 +284,10 @@ function App() {
             {
               valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
             }
+            {
+              error && <Alert variant="danger">{error}</Alert>
+            }
+
           </Col>
         </Row>
       </Container>
