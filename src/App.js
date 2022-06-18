@@ -115,15 +115,14 @@ function App() {
   }
 
   function handleLoadExample() {
-    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
-    const example = examples[newIndex];
+    const example = examples[exampleIndex];
     validateAndUpdateSpatial({
       wkt: example[0],
       epsg: example[1]
     });
     setEpsg(example[1]);
+    const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
     setExampleIndex(newIndex);
-    visualize();
   }
 
   function parseWkt(wkt) {
@@ -249,17 +248,20 @@ function App() {
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
     if (Object.keys(params).length === 0) {
+      handleLoadExample();
+      /*
       validateAndUpdateSpatial({
         wkt: examples[0][0],
         epsg: examples[0][1]
       });
-      setEpsg(examples[0][1]);
+      */
+      //setEpsg(examples[0][1]);
     } else {
       validateAndUpdateSpatial({
         wkt: params.wkt ? params.wkt : "",
         epsg: params.epsg ? params.epsg : ""
       });
-      setEpsg(params.epsg ? params.epsg : "");
+      //setEpsg(params.epsg ? params.epsg : "");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
