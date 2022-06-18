@@ -28,8 +28,6 @@ function App() {
 
   const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
-  //const [wkt, setWkt] = useState("");
-  //const [epsg, setEpsg] = useState("");
   const [spatial, setSpatial] = useState({
     wkt: "",
     epsg: ""
