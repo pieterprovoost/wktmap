@@ -12,6 +12,7 @@ import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
 import FullscreenControl from "./FullscreenControl";
+import rdfDereferencer from "rdf-dereference";
 
 const DEFAULT_EPSG = "4326";
 const MAX_CHARACTERS = 4000;
