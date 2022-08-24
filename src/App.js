@@ -15,6 +15,7 @@ import FullscreenControl from "./FullscreenControl";
 
 const DEFAULT_EPSG = "4326";
 const MAX_CHARACTERS = 4000;
+const USE_WKT = false;
 
 function createCircleMarker(feature, latlng) {
   let options = {
@@ -62,9 +63,9 @@ function App() {
     if (inputEpsg in epsgCache.current) {
       proj = epsgCache.current[inputEpsg];
     } else {
-      const res = await fetch("https://epsg.io/" + inputEpsg + ".proj4");
+      const res = await fetch("https://epsg.io/" + inputEpsg + (USE_WKT ? ".wkt" : ".proj4"));
       const text = await res.text();
-      if (text.includes("+proj")) {
+      if (text.includes(USE_WKT ? "PROJCS" : "+proj")) {
         proj = text;
         epsgCache.current[inputEpsg] = proj;
       }
