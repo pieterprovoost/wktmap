@@ -29,13 +29,7 @@ function App() {
   const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
   const [epsg, setEpsg] = useState("");
-  const [spatial, setSpatial] = useState({
-    wkt: "",
-    epsg: "",
-    proj: null,
-    json: null
-  });
-  const [valid, setValid] = useState(null);
+  const [wkt, setWkt] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
 
   const groupRef = useRef();
@@ -56,72 +50,60 @@ function App() {
         <FullscreenControl />
       </MapContainer>
     ), []
-  )
+  );
 
   async function fetchProj(inputEpsg) {
     let proj;
     if (inputEpsg in epsgCache.current) {
       proj = epsgCache.current[inputEpsg];
     } else {
-      const res = await fetch("https://epsg.io/" + inputEpsg + (USE_WKT ? ".wkt" : ".proj4"));
-      const text = await res.text();
-      if (text.includes(USE_WKT ? "PROJCS" : "+proj")) {
-        proj = text;
-        epsgCache.current[inputEpsg] = proj;
+      try {
+        const res = await fetch("https://epsg.io/" + inputEpsg + (USE_WKT ? ".wkt" : ".proj4"));
+        if (res.status === 200) {
+          const text = await res.text();
+          if (text.includes(USE_WKT ? "PROJCS" : "+proj")) {
+            proj = text;
+            epsgCache.current[inputEpsg] = proj;
+          }
+        }
+      } catch (error) {
       }
     }
     return proj;
   }
   
-  function handleEpsgClear() {
-    validateAndUpdateSpatial({
-      ...spatial,
-      epsg: DEFAULT_EPSG
-    });
-    setEpsg(DEFAULT_EPSG);
-  }
-
   function handleWktClear() {
-    validateAndUpdateSpatial({
-      ...spatial,
+    setWkt("");
+    processInput({
+      epsg: epsg,
       wkt: ""
     });
   }
 
-  async function handleEpsgValidate() {
-    const proj = await fetchProj(spatial.epsg);
-    if (proj) {
-      setValid(proj);
-    } else {
-      setValid(false);
-    }
-  }
-
   function handleWktChange(e) {
-    validateAndUpdateSpatial({
-      ...spatial,
-      wkt: e.target.value
+    setWkt(e.target.value);
+    processInput({
+      wkt: e.target.value,
+      epsg: epsg
     });
   }
 
   function handleEpsgChange(e) {
     setEpsg(e.target.value);
-  }
-
-  function updateEpsg() {
-    validateAndUpdateSpatial({
-      ...spatial,
-      epsg: epsg
+    processInput({
+      wkt: wkt,
+      epsg: e.target.value
     });
   }
 
-  function handleLoadExample() {
+  function loadExample() {
     const example = examples[exampleIndex];
-    validateAndUpdateSpatial({
+    setWkt(example[0]);
+    setEpsg(example[1]);
+    processInput({
       wkt: example[0],
       epsg: example[1]
     });
-    setEpsg(example[1]);
     const newIndex = exampleIndex < examples.length - 1 ? exampleIndex + 1 : 0;
     setExampleIndex(newIndex);
   }
@@ -134,7 +116,7 @@ function App() {
     return json;
   }
 
-  async function validateAndUpdateSpatial(input) {
+  async function processInput(input) {
 
     setError(null);
     input = {
@@ -200,10 +182,12 @@ function App() {
 
     // update
 
-    setSpatial(input);
+    updatePath(input);
+    visualize(input);
+
   }
 
-  async function visualize() {
+  async function visualize(spatial) {
     if (map) {
       if (!groupRef.current) {
         const layerGroup = new L.LayerGroup();
@@ -211,7 +195,6 @@ function App() {
         layerGroup.addTo(map);
       }
       groupRef.current.clearLayers();
-
       if (spatial.json) {
         const conf = {
           pointToLayer: createCircleMarker,
@@ -225,36 +208,36 @@ function App() {
         let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
         map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
       }
+    } else {
+      console.log("Map not available")
     }
   }
 
-  useEffect(() => {
-    visualize();
-  }, [ spatial ]); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  useEffect(() => {
-    setValid(null);
-    if (spatial.wkt !== "" || spatial.epsg !== "") {
-      const params = new URLSearchParams({wkt: spatial.wkt, epsg: spatial.epsg}).toString();
+  function updatePath(input) {
+    if (input.wkt !== "" || input.epsg !== "") {
+      const params = new URLSearchParams({wkt: input.wkt, epsg: input.epsg}).toString();
       if (params.length < MAX_CHARACTERS) {
         window.history.replaceState(null, null, "?" + params);
       } else {
         window.history.replaceState(null, null, "/");
       }
     }
-  }, [spatial]);
+  }
 
   useEffect(() => {
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
     if (Object.keys(params).length === 0) {
-      handleLoadExample();
+      loadExample();
     } else {
-      validateAndUpdateSpatial({
-        wkt: params.wkt ? params.wkt : "",
-        epsg: params.epsg ? params.epsg : DEFAULT_EPSG
+      let paramWkt = params.wkt ? params.wkt : "";
+      let paramEpsg = params.epsg ? params.epsg : DEFAULT_EPSG;
+      setWkt(paramWkt);
+      setEpsg(paramEpsg);
+      processInput({
+        wkt: paramWkt,
+        epsg: paramEpsg
       });
-      setEpsg(params.epsg ? params.epsg : DEFAULT_EPSG);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -276,9 +259,9 @@ function App() {
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="wkt">
               <Form.Label>WKT</Form.Label>
-              <Form.Control className="font-monospace" as="textarea" rows={8} value={spatial.wkt} onChange={handleWktChange} />
+              <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
             </Form.Group>
-            <Button variant="light" onClick={handleLoadExample}>Load example</Button>
+            <Button variant="light" onClick={loadExample}>Load example</Button>
             <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
           </Col>
           <Col lg={true} className="mb-3">
@@ -286,15 +269,10 @@ function App() {
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
                 <InputGroup.Text id="basic-addon1">EPSG:</InputGroup.Text>
-                <Form.Control value={epsg} onChange={handleEpsgChange} onBlur={updateEpsg} />
-                <Button variant="warning" onClick={handleEpsgClear}>Default</Button>
-                <Button variant="light" onClick={handleEpsgValidate}>Validate</Button>
+                <Form.Control value={epsg} onChange={handleEpsgChange} />
               </InputGroup>
             </Form.Group>
 
-            {
-              valid && <Alert variant="success">Valid EPSG<br/><code>{valid}</code></Alert>
-            }
             {
               error && <Alert variant="danger">{error}</Alert>
             }
