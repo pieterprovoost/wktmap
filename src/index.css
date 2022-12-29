@@ -30,3 +30,10 @@ code {
   font-size: 0.7em !important;
   color: #0f5132 !important;
 }
+
+.toast, .toast-body {
+  color: #155724;
+  background-color: #d4edda;
+  border: 0 !important;
+  border-radius: 5px;
+}

@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup } from "react-bootstrap";
+import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Toast, ToastContainer } from "react-bootstrap";
 import { MapContainer, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -31,6 +31,7 @@ function App() {
   const [epsg, setEpsg] = useState("");
   const [wkt, setWkt] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
+  const [showUrl, setShowUrl] = useState(false);
 
   const groupRef = useRef();
   const epsgCache = useRef(epsgList);
@@ -134,6 +135,7 @@ function App() {
       }
     }).catch(error => console.error(error)); 
     window.history.replaceState(null, null, hash);
+    setShowUrl(true);
   }
 
   function loadExample() {
@@ -252,6 +254,13 @@ function App() {
 
   return (
     <div id="app">
+
+      <ToastContainer className="p-3" position="top-end">
+        <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={3000} autohide className="">
+          <Toast.Body>Generated URL for sharing</Toast.Body>
+        </Toast>
+      </ToastContainer>
+
       <Navbar bg="light" expand="lg">
         <Container>
           <Navbar.Brand href="/">
