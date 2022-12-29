@@ -52,6 +52,23 @@ function App() {
     ), []
   );
 
+  useEffect(() => {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    if (Object.keys(params).length === 0) {
+      loadExample();
+    } else {
+      let paramWkt = params.wkt ? params.wkt : "";
+      let paramEpsg = params.epsg ? params.epsg : DEFAULT_EPSG;
+      setWkt(paramWkt);
+      setEpsg(paramEpsg);
+      processInput({
+        wkt: paramWkt,
+        epsg: paramEpsg
+      });
+    }
+  }, [map]);
+
   async function fetchProj(inputEpsg) {
     let proj;
     if (inputEpsg in epsgCache.current) {
@@ -208,8 +225,6 @@ function App() {
         let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
         map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
       }
-    } else {
-      console.log("Map not available")
     }
   }
 
@@ -223,23 +238,6 @@ function App() {
       }
     }
   }
-
-  useEffect(() => {
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const params = Object.fromEntries(urlSearchParams.entries());
-    if (Object.keys(params).length === 0) {
-      loadExample();
-    } else {
-      let paramWkt = params.wkt ? params.wkt : "";
-      let paramEpsg = params.epsg ? params.epsg : DEFAULT_EPSG;
-      setWkt(paramWkt);
-      setEpsg(paramEpsg);
-      processInput({
-        wkt: paramWkt,
-        epsg: paramEpsg
-      });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div id="app">
