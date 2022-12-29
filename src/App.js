@@ -67,7 +67,7 @@ function App() {
         epsg: paramEpsg
       });
     }
-  }, [map]);
+  }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchProj(inputEpsg) {
     let proj;
