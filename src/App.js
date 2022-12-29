@@ -54,7 +54,7 @@ function App() {
   );
 
   useEffect(() => {
-    async function fetchWkt() {
+    async function fetchWkt(hash) {
       const res = await fetch("https://xpjpbiqaa3.execute-api.us-east-1.amazonaws.com/prod/wkt/" + hash);
       if (res.status === 200) {
         const data = await res.json();
@@ -68,11 +68,13 @@ function App() {
         });
       }
     }
-    let hash = window.location.pathname.replace("/", "");
-    if (hash.length > 0) {
-      fetchWkt();
-    } else {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    if (Object.keys(params).length === 0) {
       loadExample();
+    } else {
+      const hash = Object.keys(params)[0];
+      fetchWkt(hash);
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -134,7 +136,7 @@ function App() {
         "Content-Type": "application/json"
       }
     }).catch(error => console.error(error)); 
-    window.history.replaceState(null, null, hash);
+    window.history.replaceState(null, null, "?" + hash);
     setShowUrl(true);
   }
 
