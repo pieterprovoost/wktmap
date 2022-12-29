@@ -12,9 +12,9 @@ import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
 import FullscreenControl from "./FullscreenControl";
+import CRC32 from "crc-32";
 
 const DEFAULT_EPSG = "4326";
-const MAX_CHARACTERS = 4000;
 const USE_WKT = false;
 
 function createCircleMarker(feature, latlng) {
@@ -53,19 +53,25 @@ function App() {
   );
 
   useEffect(() => {
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const params = Object.fromEntries(urlSearchParams.entries());
-    if (Object.keys(params).length === 0) {
-      loadExample();
+    async function fetchWkt() {
+      const res = await fetch("https://xpjpbiqaa3.execute-api.us-east-1.amazonaws.com/prod/wkt/" + hash);
+      if (res.status === 200) {
+        const data = await res.json();
+        let paramWkt = data.wkt ? data.wkt : "";
+        let paramEpsg = data.epsg ? data.epsg : DEFAULT_EPSG;
+        setWkt(paramWkt);
+        setEpsg(paramEpsg);
+        processInput({
+          wkt: paramWkt,
+          epsg: paramEpsg
+        });
+      }
+    }
+    let hash = window.location.pathname.replace("/", "");
+    if (hash.length > 0) {
+      fetchWkt();
     } else {
-      let paramWkt = params.wkt ? params.wkt : "";
-      let paramEpsg = params.epsg ? params.epsg : DEFAULT_EPSG;
-      setWkt(paramWkt);
-      setEpsg(paramEpsg);
-      processInput({
-        wkt: paramWkt,
-        epsg: paramEpsg
-      });
+      loadExample();
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -111,6 +117,23 @@ function App() {
       wkt: wkt,
       epsg: e.target.value
     });
+  }
+
+  function handleShare() {
+    let crc = CRC32.str(wkt + epsg);
+    let hash = (crc >>> 0).toString(16).padStart(8, "0");
+    fetch("https://xpjpbiqaa3.execute-api.us-east-1.amazonaws.com/prod/wkt", {
+      method: "POST",
+      body: JSON.stringify({
+        id: hash,
+        wkt: wkt,
+        epsg: epsg
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }).catch(error => console.error(error)); 
+    window.history.replaceState(null, null, hash);
   }
 
   function loadExample() {
@@ -199,7 +222,6 @@ function App() {
 
     // update
 
-    updatePath(input);
     visualize(input);
 
   }
@@ -228,17 +250,6 @@ function App() {
     }
   }
 
-  function updatePath(input) {
-    if (input.wkt !== "" || input.epsg !== "") {
-      const params = new URLSearchParams({wkt: input.wkt, epsg: input.epsg}).toString();
-      if (params.length < MAX_CHARACTERS) {
-        window.history.replaceState(null, null, "?" + params);
-      } else {
-        window.history.replaceState(null, null, "/");
-      }
-    }
-  }
-
   return (
     <div id="app">
       <Navbar bg="light" expand="lg">
@@ -261,6 +272,7 @@ function App() {
             </Form.Group>
             <Button variant="light" onClick={loadExample}>Load example</Button>
             <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
+            <Button variant="success" onClick={handleShare}>Share</Button>
           </Col>
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="epsg">
