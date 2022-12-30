@@ -1,8 +1,9 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Toast, ToastContainer } from "react-bootstrap";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
 import { React, useState, useMemo, useEffect, useRef } from "react";
 import epsgList from "./epsg";
 import crsList from "./crs";
@@ -13,6 +14,8 @@ import GeoJSON from "ol/format/GeoJSON";
 import { Twitter } from "react-bootstrap-icons";
 import FullscreenControl from "./FullscreenControl";
 import CRC32 from "crc-32";
+import { EditControl } from "react-leaflet-draw";
+import { geojsonToWKT } from "@terraformer/wkt";
 
 const DEFAULT_EPSG = "4326";
 const USE_WKT = false;
@@ -49,6 +52,43 @@ function App() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FullscreenControl />
+        <FeatureGroup ref={groupRef}>
+          <EditControl
+            position="topright"
+            onDrawStop={handleDrawStop}
+            edit={{edit: false, remove: false}}
+            draw={{
+              rectangle: false,
+              marker: false,
+              circle: false,
+              polygon: {
+                shapeOptions: {
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: "#3388ff"
+                }
+              },
+              circlemarker: {
+                  opacity: 1,
+                  fillOpacity: 0.2,
+                  weight: 3,
+                  radius: 4,
+                  color: "#3388ff",
+                  fill: "#3388ff"
+              },
+              polyline: {
+                shapeOptions: {
+                    opacity: 1,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: false
+                }
+              }
+            }}
+          />
+        </FeatureGroup>
       </MapContainer>
     ), []
   );
@@ -98,6 +138,27 @@ function App() {
     return proj;
   }
   
+  function handleDrawStop() {
+    const geometries = [];
+    groupRef.current.eachLayer(function(layer) {
+      const geo = layer.toGeoJSON();
+      if (geo.type === "Feature") {
+        geometries.push(geojsonToWKT(geo.geometry));
+      } else if (geo.type === "FeatureCollection") {
+        geo.features.forEach(feature => {
+          geometries.push(geojsonToWKT(feature.geometry));
+        });
+      }
+    });
+    if (geometries.length === 1) {
+      setWkt(geometries[0]);
+    } else if (geometries.length > 1) {
+      setWkt("GEOMETRYCOLLECTION(" + geometries.join(", ") + ")");
+    }
+    setEpsg(4326);
+    clearHash();
+  }
+
   function handleWktClear() {
     clearHash();
     setWkt("");
@@ -241,26 +302,19 @@ function App() {
   }
 
   async function visualize(spatial) {
-    if (map) {
-      if (!groupRef.current) {
-        const layerGroup = new L.LayerGroup();
-        groupRef.current = layerGroup;
-        layerGroup.addTo(map);
-      }
-      groupRef.current.clearLayers();
-      if (spatial.json) {
-        const conf = {
-          pointToLayer: createCircleMarker,
-        };
-        if (spatial.proj) {
-          conf.coordsToLatLng = function(coords) {
-            const newCoords = proj4(spatial.proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
-            return new L.LatLng(newCoords[1], newCoords[0]);
-          }
+    groupRef.current.clearLayers();
+    if (spatial.json) {
+      const conf = {
+        pointToLayer: createCircleMarker,
+      };
+      if (spatial.proj) {
+        conf.coordsToLatLng = function(coords) {
+          const newCoords = proj4(spatial.proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
+          return new L.LatLng(newCoords[1], newCoords[0]);
         }
-        let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
-        map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
       }
+      let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
+      if (map) map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
     }
   }
 
@@ -303,19 +357,17 @@ function App() {
                 <Form.Control value={epsg} onChange={handleEpsgChange} />
               </InputGroup>
             </Form.Group>
-
             {
               error && <Alert variant="danger">{error}</Alert>
             }
-
           </Col>
         </Row>
       </Container>
 
     <footer className="footer mt-auto pt-5 pb-4 bg-light">
       <Container>
-      <p className="text-muted">This page parses and visualizes <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems. Built with <a href="https://openlayers.org/" target="blank" rel="noreferrer" className="text-muted">OpenLayers</a>, <a href="https://leafletjs.com/" target="blank" rel="noreferrer" className="text-muted">Leaflet</a>, <a href="https://trac.osgeo.org/proj4js" target="blank" rel="noreferrer" className="text-muted">Proj4js</a>, and <a href="https://epsg.io/" target="blank" rel="noreferrer" className="text-muted">epsg.io</a>.</p>
-      <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
+        <p className="text-muted">This page parses, visualizes, and shares <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems. Built with <a href="https://openlayers.org/" target="blank" rel="noreferrer" className="text-muted">OpenLayers</a>, <a href="https://leafletjs.com/" target="blank" rel="noreferrer" className="text-muted">Leaflet</a>, <a href="https://trac.osgeo.org/proj4js" target="blank" rel="noreferrer" className="text-muted">Proj4js</a>, <a href="https://github.com/terraformer-js/terraformer" target="blank" rel="noreferrer" className="text-muted">terraformer</a>, and <a href="https://epsg.io/" target="blank" rel="noreferrer" className="text-muted">epsg.io</a>.</p>
+        <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
       </Container>
     </footer>
 
