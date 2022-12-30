@@ -99,6 +99,7 @@ function App() {
   }
   
   function handleWktClear() {
+    clearHash();
     setWkt("");
     processInput({
       epsg: epsg,
@@ -107,6 +108,7 @@ function App() {
   }
 
   function handleWktChange(e) {
+    clearHash();
     setWkt(e.target.value);
     processInput({
       wkt: e.target.value,
@@ -115,6 +117,7 @@ function App() {
   }
 
   function handleEpsgChange(e) {
+    clearHash();
     setEpsg(e.target.value);
     processInput({
       wkt: wkt,
@@ -141,6 +144,7 @@ function App() {
   }
 
   function loadExample() {
+    clearHash();
     const example = examples[exampleIndex];
     setWkt(example[0]);
     setEpsg(example[1]);
@@ -228,6 +232,12 @@ function App() {
 
     visualize(input);
 
+  }
+
+  function clearHash() {
+    const url = new URL(window.location);
+    url.search = "";
+    window.history.replaceState(null, null, url);
   }
 
   async function visualize(spatial) {
