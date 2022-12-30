@@ -90,7 +90,7 @@ function App() {
           />
         </FeatureGroup>
       </MapContainer>
-    ), []
+    ), [] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
