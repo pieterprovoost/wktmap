@@ -345,9 +345,11 @@ function App() {
               <Form.Label>WKT</Form.Label>
               <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
             </Form.Group>
-            <Button variant="light" onClick={loadExample}>Load example</Button>
-            <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
-            <Button variant="success" onClick={handleShare}>Share</Button>
+            <div className="d-flex d-md-block justify-content-between">
+              <Button variant="light" onClick={loadExample}>Load example</Button>
+              <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
+              <Button variant="success" onClick={handleShare}>Share</Button>
+            </div>
           </Col>
           <Col lg={true} className="mb-3">
             <Form.Group className="mb-3" controlId="epsg">
