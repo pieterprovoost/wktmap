@@ -16,6 +16,7 @@ import FullscreenControl from "./FullscreenControl";
 import CRC32 from "crc-32";
 import { EditControl } from "react-leaflet-draw";
 import { geojsonToWKT } from "@terraformer/wkt";
+import ReactGA from "react-ga4";
 
 const DEFAULT_EPSG = "4326";
 const USE_WKT = false;
@@ -224,6 +225,11 @@ function App() {
     }).catch(error => console.error(error)); 
     window.history.replaceState(null, null, "?" + hash);
     setShowUrl(true);
+    ReactGA.event({
+      category: "wkt",
+      action: "wkt_share",
+      label: hash,
+    });
   }
 
   function loadExample() {

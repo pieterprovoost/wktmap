@@ -18,6 +18,7 @@
     "react-bootstrap": "^2.7.0",
     "react-bootstrap-icons": "^1.10.2",
     "react-dom": "^18.2.0",
+    "react-ga4": "^2.1.0",
     "react-leaflet": "^4.2.0",
     "react-leaflet-draw": "^0.20.4",
     "web-vitals": "^2.1.4"
