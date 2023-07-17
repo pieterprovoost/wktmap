@@ -105,4 +105,4 @@ async function transformInput(input) {
 
 }
 
-export { parseWkt, transformInput, ValueError };
+export { parseWkt, transformInput, ValueError, fetchProj };
