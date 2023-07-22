@@ -40,6 +40,38 @@ async function fetchProj(inputEpsg) {
   return proj;
 }
 
+function extractAndParseCrs(input) {
+
+  const regexLiteral = new RegExp("<.*>\s*(.*)");
+  const regexPostgis = new RegExp("SRID=[0-9]+;\s*(.*)");
+
+  let crsPart, wktPart, parsedEpsg;
+
+  if (regexPostgis.test(input.wkt)) {
+    [, crsPart, wktPart] = input.wkt.match(/(SRID=[0-9]+);\s*(.*)/);
+    parsedEpsg = crsPart.match(/(\d+)/)[0];
+  } else {
+    [, crsPart, wktPart] = input.wkt.match(/(<.*>)?\s*(.*)/);
+    if (crsPart) {
+      const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
+      const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
+      if (cleanCrsPart in crsList) {
+        parsedEpsg = crsList[cleanCrsPart];
+      } else if (matches) {
+        parsedEpsg = matches[1];
+      } else {
+        throw ValueError("CRS URI not supported (only OpenGIS EPSG for now)");
+      }
+    }
+  }
+
+  return {
+    crsPart: crsPart,
+    wktPart: wktPart,
+    parsedEpsg: parsedEpsg
+  }
+}
+
 async function transformInput(input) {
   input = {
     ...input,
@@ -47,26 +79,10 @@ async function transformInput(input) {
     json: null
   }
 
-  // split input
+  // split input, parse EPSG if in WKT
 
-  const [, crsPart, wktPart] = input.wkt.match(/(<.*>)?\s*(.*)/);
-  
-  // parse EPSG if in WKT
-
-  let parsedEpsg;
-  
-  if (crsPart) {
-    const cleanCrsPart = crsPart.trim().replace(/^<|>$/g, "").replace("https://", "http://");
-    const matches = crsPart.match(/opengis.net\/def\/crs\/EPSG\/[0-9.]+\/([0-9]+)(?:>)/);
-    if (cleanCrsPart in crsList) {
-      parsedEpsg = crsList[cleanCrsPart];
-    } else if (matches) {
-      parsedEpsg = matches[1];
-    } else {
-      throw ValueError("CRS URI not supported (only OpenGIS EPSG for now)");
-    }
-  }
-  
+  const { wktPart, parsedEpsg } = extractAndParseCrs(input);
+    
   if (parsedEpsg) {
     input = {
       ...input,
@@ -105,4 +121,4 @@ async function transformInput(input) {
 
 }
 
-export { parseWkt, transformInput, ValueError, fetchProj };
+export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs };
