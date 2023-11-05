@@ -13,7 +13,7 @@ import CRC32 from "crc-32";
 import { EditControl } from "react-leaflet-draw";
 import { geojsonToWKT } from "@terraformer/wkt";
 import ReactGA from "react-ga4";
-import { transformInput, ValueError } from "./wkt";
+import { transformInput, ValueError, expandCollections } from "./wkt";
 
 const DEFAULT_EPSG = "4326";
 
@@ -141,7 +141,7 @@ function App() {
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
   
   function handleDrawStop() {
-    const geometries = [];
+    let geometries = [];
     groupRef.current.eachLayer(function(layer) {
       const geo = layer.toGeoJSON();
       if (geo.type === "Feature") {
@@ -153,10 +153,10 @@ function App() {
       }
     });
     let wkt;
+    geometries = expandCollections(geometries);
     if (geometries.length === 1) {
       wkt = geometries[0];
     } else if (geometries.length > 1) {
-      // TODO: fix for existing GEOMETRYCOLLECTION (should not be nested)
       wkt = "GEOMETRYCOLLECTION(" + geometries.join(", ") + ")";
     }
     setEpsg(4326);
