@@ -45,7 +45,7 @@ async function fetchProj(inputEpsg) {
 function extractAndParseCrs(input) {
 
   // const regexLiteral = new RegExp("<.*>\s*(.*)");
-  const regexPostgis = new RegExp("SRID=[0-9]+;\s*(.*)");
+  const regexPostgis = new RegExp("SRID=[0-9]+;\\s*(.*)");
 
   let crsPart, wktPart, parsedEpsg;
 
@@ -109,11 +109,11 @@ async function transformInput(input) {
       
       // TODO: move
       const uint8 = Geometry.parse(wktPart).toWkb();
-      const hex = Buffer.from(uint8).toString("hex"). toUpperCase();
+      const hex = Buffer.from(uint8).toString("hex").toUpperCase();
       input.wkb = hex;
 
       const uint8Ewkb = Geometry.parse("SRID=" + input.epsg + ";" + wktPart).toEwkb();
-      const hexEwkb = Buffer.from(uint8Ewkb).toString("hex"). toUpperCase();
+      const hexEwkb = Buffer.from(uint8Ewkb).toString("hex").toUpperCase();
       input.ewkb = hexEwkb;
 
     } catch (e) {
