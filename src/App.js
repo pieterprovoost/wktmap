@@ -13,7 +13,7 @@ import CRC32 from "crc-32";
 import { EditControl } from "react-leaflet-draw";
 import { geojsonToWKT } from "@terraformer/wkt";
 import ReactGA from "react-ga4";
-import { transformInput, ValueError, expandCollections } from "./wkt";
+import { transformInput, ValueError } from "./wkt";
 
 const DEFAULT_EPSG = "4326";
 
@@ -140,24 +140,32 @@ function App() {
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
   
+  function splitGeometry(geometry) {
+    if (geometry.type === "GeometryCollection") { 
+      return geometry.geometries;
+    } else {
+      return [geometry];
+    }
+  }
+
   function handleDrawStop() {
     let geometries = [];
     groupRef.current.eachLayer(function(layer) {
       const geo = layer.toGeoJSON();
       if (geo.type === "Feature") {
-        geometries.push(geojsonToWKT(geo.geometry));
+        geometries = geometries.concat(splitGeometry(geo.geometry));
       } else if (geo.type === "FeatureCollection") {
         geo.features.forEach(feature => {
-          geometries.push(geojsonToWKT(feature.geometry));
+          geometries = geometries.concat(splitGeometry(feature.geometry));
         });
       }
     });
+    const wktGeometries = geometries.map(geojsonToWKT);
     let wkt;
-    geometries = expandCollections(geometries);
-    if (geometries.length === 1) {
-      wkt = geometries[0];
-    } else if (geometries.length > 1) {
-      wkt = "GEOMETRYCOLLECTION(" + geometries.join(", ") + ")";
+    if (wktGeometries.length === 1) {
+      wkt = wktGeometries[0];
+    } else if (wktGeometries.length > 1) {
+      wkt = "GEOMETRYCOLLECTION(" + wktGeometries.join(", ") + ")";
     }
     setEpsg(4326);
     clearHash();

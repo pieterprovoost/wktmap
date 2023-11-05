@@ -136,13 +136,4 @@ async function transformInput(input) {
 
 }
 
-function expandCollections(geometries) {
-    // TODO: fix for existing GEOMETRYCOLLECTION (should not be nested)
-    geometries.reduce(function(acc, current) {
-      acc.push(current);
-      return acc;
-    }, []);
-    return geometries;
-}
-
-export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, expandCollections };
+export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs };
