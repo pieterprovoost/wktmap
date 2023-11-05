@@ -2,6 +2,8 @@ import WKT from "ol/format/WKT";
 import GeoJSON from "ol/format/GeoJSON";
 import epsgList from "./epsg";
 import crsList from "./crs";
+import { Geometry } from "@pieterprovoost/wkx";
+import { Buffer } from "buffer";
 
 const USE_WKT = false;
 
@@ -42,7 +44,7 @@ async function fetchProj(inputEpsg) {
 
 function extractAndParseCrs(input) {
 
-  const regexLiteral = new RegExp("<.*>\s*(.*)");
+  // const regexLiteral = new RegExp("<.*>\s*(.*)");
   const regexPostgis = new RegExp("SRID=[0-9]+;\s*(.*)");
 
   let crsPart, wktPart, parsedEpsg;
@@ -76,7 +78,9 @@ async function transformInput(input) {
   input = {
     ...input,
     proj: null,
-    json: null
+    json: null,
+    wkb: null,
+    ewkb: null
   }
 
   // split input, parse EPSG if in WKT
@@ -102,7 +106,18 @@ async function transformInput(input) {
   if (input.proj && wktPart !== "") {
     try {
       input.json = parseWkt(wktPart);
+      
+      // TODO: move
+      const uint8 = Geometry.parse(wktPart).toWkb();
+      const hex = Buffer.from(uint8).toString("hex"). toUpperCase();
+      input.wkb = hex;
+
+      const uint8Ewkb = Geometry.parse("SRID=" + input.epsg + ";" + wktPart).toEwkb();
+      const hexEwkb = Buffer.from(uint8Ewkb).toString("hex"). toUpperCase();
+      input.ewkb = hexEwkb;
+
     } catch (e) {
+      console.error(e);
       let matches;
       let error = "WKT parsing failed";
       matches = e.message.match(/(Unexpected .* at position.*)(?:\sin.*)/);

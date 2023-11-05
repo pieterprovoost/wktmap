@@ -13,12 +13,11 @@ jobs:
         node-version: [16.x]
     steps:
     - uses: actions/checkout@v1
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Install Packages
-      run: npm install
+        cache: 'npm'
     - name: Build page
       run: npm run build
     - name: Create cname file

@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Toast, ToastContainer } from "react-bootstrap";
+import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Toast, ToastContainer, Dropdown } from "react-bootstrap";
 import { MapContainer, TileLayer, FeatureGroup, LayersControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -30,8 +30,12 @@ function App() {
   const [error, setError] = useState(null);
   const [epsg, setEpsg] = useState("");
   const [wkt, setWkt] = useState("");
+  const [wkb, setWkb] = useState("");
+  const [ewkb, setEwkb] = useState("");
+  const [json, setJson] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
   const [showUrl, setShowUrl] = useState(false);
+  const [showCopied, setShowCopied] = useState(false);
 
   const groupRef = useRef();
 
@@ -148,13 +152,39 @@ function App() {
         });
       }
     });
+    let wkt;
     if (geometries.length === 1) {
-      setWkt(geometries[0]);
+      wkt = geometries[0];
     } else if (geometries.length > 1) {
-      setWkt("GEOMETRYCOLLECTION(" + geometries.join(", ") + ")");
+      // TODO: fix for existing GEOMETRYCOLLECTION (should not be nested)
+      wkt = "GEOMETRYCOLLECTION(" + geometries.join(", ") + ")";
     }
     setEpsg(4326);
     clearHash();
+    if (wkt) {
+      setWkt(wkt);
+      processInput({
+        epsg: 4326,
+        wkt: wkt
+      }, false);
+    }
+  }
+
+  function handleCopy(format) {
+    if (!error) {
+      let text = "";
+      if (format === "wkt") {
+        text = wkt;
+      } else if (format === "wkb") {
+        text = wkb;
+      } else if (format === "ewkb") {
+        text = ewkb;
+      } else if (format === "geojson") {
+        text = json;
+      }
+      navigator.clipboard.writeText(text);
+      setShowCopied(true);
+    }
   }
 
   function handleWktClear() {
@@ -220,7 +250,7 @@ function App() {
     setExampleIndex(newIndex);
   }
 
-  async function processInput(input) {
+  async function processInput(input, doVisualize = true) {
     setError(null);
     try {
       input = await transformInput(input);
@@ -230,7 +260,12 @@ function App() {
       }
     }
     setEpsg(input.epsg);
-    visualize(input);
+    setWkb(input.wkb);
+    setEwkb(input.ewkb);
+    setJson(input.json ? JSON.stringify(input.json, null, 2) : null);
+    if (doVisualize) {
+      visualize(input);
+    }
   }
 
   function clearHash() {
@@ -260,8 +295,11 @@ function App() {
     <div id="app">
 
       <ToastContainer className="p-3" position="top-end">
-        <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={3000} autohide className="">
+      <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={5000} autohide className="">
           <Toast.Body>Generated URL for sharing</Toast.Body>
+        </Toast>
+        <Toast onClose={() => setShowCopied(false)} show={showCopied} delay={5000} autohide className="">
+          <Toast.Body>Copied geometry</Toast.Body>
         </Toast>
       </ToastContainer>
 
@@ -284,9 +322,18 @@ function App() {
               <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
             </Form.Group>
             <div className="d-flex d-md-block justify-content-between">
-              <Button variant="light" onClick={loadExample}>Load example</Button>
-              <Button className="mx-2" variant="warning" onClick={handleWktClear}>Clear</Button>
-              <Button variant="success" onClick={handleShare}>Share</Button>
+              <Button className="me-2" variant="light" onClick={loadExample}>Load example</Button>
+              <Button className="me-2" variant="warning" onClick={handleWktClear}>Clear</Button>
+              <Dropdown className="me-2 d-inline-block">
+                <Dropdown.Toggle variant="light">Copy as</Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("wkt")}>WKT</Dropdown.Item>
+                  <Dropdown.Item disabled={error || !wkb} onClick={() => handleCopy("wkb")}>WKB</Dropdown.Item>
+                  <Dropdown.Item disabled={error || !ewkb} onClick={() => handleCopy("ewkb")}>EWKB</Dropdown.Item>
+                  {/* <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("geojson")}>GeoJSON</Dropdown.Item> */}
+                </Dropdown.Menu>
+              </Dropdown>
+              <Button className="me-2" variant="success" onClick={handleShare}>Share</Button>
             </div>
           </Col>
           <Col lg={true} className="mb-3">
@@ -306,7 +353,7 @@ function App() {
 
       <footer className="footer mt-auto pt-5 pb-4 bg-light">
         <Container>
-          <p className="text-muted">This page parses, visualizes, and shares <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems. Built with <a href="https://openlayers.org/" target="blank" rel="noreferrer" className="text-muted">OpenLayers</a>, <a href="https://leafletjs.com/" target="blank" rel="noreferrer" className="text-muted">Leaflet</a>, <a href="https://trac.osgeo.org/proj4js" target="blank" rel="noreferrer" className="text-muted">Proj4js</a>, <a href="https://github.com/terraformer-js/terraformer" target="blank" rel="noreferrer" className="text-muted">terraformer</a>, and <a href="https://epsg.io/" target="blank" rel="noreferrer" className="text-muted">epsg.io</a>. Use the drawing tools to create your own geometries.</p>
+          <p className="text-muted">This page parses, visualizes, and shares <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems. Built with <a href="https://openlayers.org/" target="blank" rel="noreferrer" className="text-muted">OpenLayers</a>, <a href="https://leafletjs.com/" target="blank" rel="noreferrer" className="text-muted">Leaflet</a>, <a href="https://trac.osgeo.org/proj4js" target="blank" rel="noreferrer" className="text-muted">Proj4js</a>, <a href="https://github.com/terraformer-js/terraformer" target="blank" rel="noreferrer" className="text-muted">terraformer</a>, and <a href="https://epsg.io/" target="blank" rel="noreferrer" className="text-muted">epsg.io</a>. Use the drawing tools to create your own geometries. Copy as Well-known Binary (WKB) or Extended Well-known Binary (EWKB).</p>
           <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
         </Container>
       </footer>
