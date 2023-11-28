@@ -80,7 +80,15 @@ function App() {
             onDrawStop={handleDrawStop}
             edit={{edit: false, remove: false}}
             draw={{
-              rectangle: false,
+              rectangle: {
+                shapeOptions: {
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: "#3388ff"
+                }
+              },
               marker: false,
               circle: false,
               polygon: {
