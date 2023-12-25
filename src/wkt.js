@@ -44,7 +44,6 @@ async function fetchProj(inputEpsg) {
 
 function extractAndParseCrs(input) {
 
-  // const regexLiteral = new RegExp("<.*>\s*(.*)");
   const regexPostgis = new RegExp("SRID=[0-9]+;\\s*(.*)");
 
   let crsPart, wktPart, parsedEpsg;
