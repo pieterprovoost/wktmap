@@ -5,7 +5,6 @@ import crsList from "./crs";
 import { Geometry } from "@pieterprovoost/wkx";
 import { Buffer } from "buffer";
 import { cellToBoundary } from "h3-js";
-import { geojsonToWKT } from "@terraformer/wkt";
 
 const USE_WKT = false;
 
