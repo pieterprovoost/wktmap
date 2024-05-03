@@ -275,6 +275,7 @@ function App() {
         setError(error.message);
       }
     }
+    setWkt(input.wkt);
     setEpsg(input.epsg);
     setWkb(input.wkb);
     setEwkb(input.ewkb);

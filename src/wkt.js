@@ -4,6 +4,8 @@ import epsgList from "./epsg";
 import crsList from "./crs";
 import { Geometry } from "@pieterprovoost/wkx";
 import { Buffer } from "buffer";
+import { cellToBoundary } from "h3-js";
+import { geojsonToWKT } from "@terraformer/wkt";
 
 const USE_WKT = false;
 
@@ -80,6 +82,15 @@ async function transformInput(input) {
     json: null,
     wkb: null,
     ewkb: null
+  }
+
+  // handle H3
+
+  if (input.wkt && (input.wkt.length == 15 || input.wkt.length == 16) && input.wkt.match(/^[0-9a-f]+$/i)) {
+    const boundary = cellToBoundary(input.wkt, true);
+    const wkt = "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
+    input.wkt = wkt;
+    input.epsg = 4326;
   }
 
   // split input, parse EPSG if in WKT
