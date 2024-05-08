@@ -6,6 +6,7 @@ import { Geometry } from "@pieterprovoost/wkx";
 import { Buffer } from "buffer";
 import { cellToBoundary } from "h3-js";
 import geohash from "ngeohash";
+import quadkeytools from "quadkeytools";
 
 const USE_WKT = false;
 
@@ -89,6 +90,21 @@ async function transformInput(input) {
   if (input.wkt && (input.wkt.length === 15 || input.wkt.length === 16) && input.wkt.match(/^[0-9a-f]+$/i)) {
     const boundary = cellToBoundary(input.wkt, true);
     const wkt = "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
+    input.wkt = wkt;
+    input.epsg = 4326;
+  } else if (input.wkt && input.wkt.match(/^[0-3]+$/)) {
+    const quadkey = quadkeytools.bbox(input.wkt);
+    const left = quadkey.min.lng;
+    const right = quadkey.max.lng;
+    const top = quadkey.max.lat;
+    const bottom = quadkey.min.lat;
+    const wkt = "POLYGON((" +
+      left + " " + top + ", " +
+      right + " " + top + ", " +
+      right + " " + bottom + ", " +
+      left + " " + bottom + ", " +
+      left + " " + top +
+      "))";
     input.wkt = wkt;
     input.epsg = 4326;
   } else if (input.wkt && input.wkt.match(/^[0-9a-z]+$/)) {
