@@ -37,3 +37,19 @@ code {
   border: 0 !important;
   border-radius: 5px;
 }
+
+html[data-bs-theme="light"] .navbar {
+  background-color: #F8F9FA !important;
+}
+
+html[data-bs-theme="light"] footer {
+  background-color: #F8F9FA !important;
+}
+
+html[data-bs-theme="dark"] .navbar {
+  background-color: #343A40 !important;
+}
+
+html[data-bs-theme="dark"] footer {
+  background-color: #343A40 !important;
+}

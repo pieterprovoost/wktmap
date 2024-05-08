@@ -17,6 +17,12 @@ import { transformInput, ValueError } from "./wkt";
 
 const DEFAULT_EPSG = "4326";
 
+let tileURL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+  document.documentElement.setAttribute("data-bs-theme", "dark");
+  tileURL = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png";
+}
+
 function createCircleMarker(feature, latlng) {
   let options = {
     radius: 4
@@ -51,7 +57,7 @@ function App() {
           <LayersControl.BaseLayer checked name="OpenStreetMap">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              url={tileURL}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Humanitarian">
@@ -320,7 +326,7 @@ function App() {
         </Toast>
       </ToastContainer>
 
-      <Navbar bg="light" expand="lg">
+      <Navbar expand="lg">
         <Container>
           <Navbar.Brand href="/">
             Well-known Text (WKT) visualization
@@ -368,7 +374,7 @@ function App() {
         </Row>
       </Container>
 
-      <footer className="footer mt-auto pt-5 pb-4 bg-light">
+      <footer className="footer mt-auto pt-5 pb-4">
         <Container>
           <p className="text-muted">This page parses, visualizes, and shares <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry" rel="noreferrer" className="text-muted" target="_blank">WKT</a> (ISO 13249) as well as <a href="https://opengeospatial.github.io/ogc-geosparql/geosparql11/spec.html#_rdfs_datatype_geowktliteral" target="blank" rel="noreferrer" className="text-muted">geo:wktLiteral</a> strings in a variety of coordinate reference systems. Built with <a href="https://openlayers.org/" target="blank" rel="noreferrer" className="text-muted">OpenLayers</a>, <a href="https://leafletjs.com/" target="blank" rel="noreferrer" className="text-muted">Leaflet</a>, <a href="https://trac.osgeo.org/proj4js" target="blank" rel="noreferrer" className="text-muted">Proj4js</a>, <a href="https://github.com/terraformer-js/terraformer" target="blank" rel="noreferrer" className="text-muted">terraformer</a>, and <a href="https://epsg.io/" target="blank" rel="noreferrer" className="text-muted">epsg.io</a>. Use the drawing tools to create your own geometries. Copy as Well-known Binary (WKB) or Extended Well-known Binary (EWKB). Also supports <a href="https://h3geo.org/" rel="noreferrer" className="text-muted" target="_blank">Uber H3</a>, <a href="https://en.wikipedia.org/wiki/Geohash" rel="noreferrer" className="text-muted" target="_blank">Geohash</a>, and <a href="https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system" rel="noreferrer" className="text-muted" target="_blank">Quadkey</a> conversion to WKT.</p>
           <p className="text-muted">Created by <Twitter className="mb-1"/> <a rel="noreferrer" className="text-muted" href="https://twitter.com/PieterPrvst" target="_blank">PieterPrvst</a></p>
