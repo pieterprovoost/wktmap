@@ -5,6 +5,7 @@ import crsList from "./crs";
 import { Geometry } from "@pieterprovoost/wkx";
 import { Buffer } from "buffer";
 import { cellToBoundary } from "h3-js";
+import geohash from "ngeohash";
 
 const USE_WKT = false;
 
@@ -83,11 +84,22 @@ async function transformInput(input) {
     ewkb: null
   }
 
-  // handle H3
+  // handle H3 and geohash
 
   if (input.wkt && (input.wkt.length === 15 || input.wkt.length === 16) && input.wkt.match(/^[0-9a-f]+$/i)) {
     const boundary = cellToBoundary(input.wkt, true);
     const wkt = "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
+    input.wkt = wkt;
+    input.epsg = 4326;
+  } else if (input.wkt && input.wkt.match(/^[0-9a-z]+$/)) {
+    const [bottom, left, top, right] = geohash.decode_bbox(input.wkt);
+    const wkt = "POLYGON((" +
+      left + " " + top + ", " +
+      right + " " + top + ", " +
+      right + " " + bottom + ", " +
+      left + " " + bottom + ", " +
+      left + " " + top +
+      "))";
     input.wkt = wkt;
     input.epsg = 4326;
   }
