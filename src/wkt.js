@@ -76,6 +76,27 @@ function extractAndParseCrs(input) {
   }
 }
 
+function extractCoordinates(wkt) {
+  const regex = /(-?\d+(\.\d+)?\s+-?\d+(\.\d+)?)/g;
+  const matches = wkt.match(regex);
+  const coordinates = matches.map(match => {
+      const [x, y] = match.split(/\s+/).map(Number);
+      return [x, y];
+  });
+  return coordinates;
+}
+
+function getBbox(wkt) {
+  const coordinates = extractCoordinates(wkt);
+  const xs = coordinates.map(coordinate => coordinate[0]);
+  const ys = coordinates.map(coordinate => coordinate[1]);
+  const left = Math.min(...xs);
+  const right = Math.max(...xs);
+  const bottom = Math.min(...ys);
+  const top = Math.max(...ys);
+  return [left, bottom, right, top].join(",");
+}
+
 async function transformInput(input) {
   input = {
     ...input,
@@ -85,7 +106,7 @@ async function transformInput(input) {
     ewkb: null
   }
 
-  // handle H3 and geohash
+  // handle H3, geohash, bbox
 
   if (input.wkt && (input.wkt.length === 15 || input.wkt.length === 16) && input.wkt.match(/^[0-9a-f]+$/i)) {
     const boundary = cellToBoundary(input.wkt, true);
@@ -107,7 +128,7 @@ async function transformInput(input) {
       "))";
     input.wkt = wkt;
     input.epsg = 4326;
-  } else if (input.wkt && input.wkt.match(/^(\d+(\.\d+)?),\s?(\d+(\.\d+)?),\s?(\d+(\.\d+)?),\s?(\d+(\.\d+)?)$/)) {
+  } else if (input.wkt && input.wkt.match(/^(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?)$/)) {
     const [left, top, right, bottom] = input.wkt.split(",").map(x => parseFloat(x.trim()));
     const wkt = "POLYGON((" +
       left + " " + top + ", " +
@@ -184,4 +205,4 @@ async function transformInput(input) {
 
 }
 
-export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs };
+export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, getBbox };

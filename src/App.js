@@ -13,7 +13,7 @@ import CRC32 from "crc-32";
 import { EditControl } from "react-leaflet-draw";
 import { geojsonToWKT } from "@terraformer/wkt";
 import ReactGA from "react-ga4";
-import { transformInput, ValueError } from "./wkt";
+import { transformInput, ValueError, getBbox } from "./wkt";
 
 const DEFAULT_EPSG = "4326";
 
@@ -197,6 +197,8 @@ function App() {
         text = ewkb;
       } else if (format === "geojson") {
         text = json;
+      } else if (format === "bbox") {
+        text = getBbox(wkt);
       }
       navigator.clipboard.writeText(text);
       setShowCopied(true);
@@ -347,6 +349,7 @@ function App() {
                   <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("wkt")}>WKT</Dropdown.Item>
                   <Dropdown.Item disabled={error || !wkb} onClick={() => handleCopy("wkb")}>WKB</Dropdown.Item>
                   <Dropdown.Item disabled={error || !ewkb} onClick={() => handleCopy("ewkb")}>EWKB</Dropdown.Item>
+                  <Dropdown.Item disabled={error || !ewkb} onClick={() => handleCopy("bbox")}>BBOX</Dropdown.Item>
                   {/* <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("geojson")}>GeoJSON</Dropdown.Item> */}
                 </Dropdown.Menu>
               </Dropdown>
