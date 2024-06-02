@@ -107,6 +107,17 @@ async function transformInput(input) {
       "))";
     input.wkt = wkt;
     input.epsg = 4326;
+  } else if (input.wkt && input.wkt.match(/^(\d+(\.\d+)?),\s?(\d+(\.\d+)?),\s?(\d+(\.\d+)?),\s?(\d+(\.\d+)?)$/)) {
+    const [left, top, right, bottom] = input.wkt.split(",").map(x => parseFloat(x.trim()));
+    const wkt = "POLYGON((" +
+      left + " " + top + ", " +
+      right + " " + top + ", " +
+      right + " " + bottom + ", " +
+      left + " " + bottom + ", " +
+      left + " " + top +
+      "))";
+    input.wkt = wkt;
+    input.epsg = 4326;
   } else if (input.wkt && input.wkt.match(/^[0-9a-z]+$/)) {
     const [bottom, left, top, right] = geohash.decode_bbox(input.wkt);
     const wkt = "POLYGON((" +
