@@ -214,11 +214,17 @@ function App() {
     });
   }
 
+  function trimWkt(wkt)
+  {
+    return wkt.replace(/\s+/g, ' ').trim();
+  }
+
   function handleWktChange(e) {
     clearHash();
-    setWkt(e.target.value);
+    const wkt = trimWkt(e.target.value)
+    setWkt(wkt);
     processInput({
-      wkt: e.target.value,
+      wkt: wkt,
       epsg: epsg
     });
   }
