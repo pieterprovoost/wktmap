@@ -82,38 +82,38 @@ function App() {
             draw={{
               rectangle: {
                 shapeOptions: {
-                  opacity: 1,
-                  fillOpacity: 0.2,
-                  weight: 3,
-                  color: "#3388ff",
-                  fill: "#3388ff"
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: "#3388ff"
                 }
               },
               marker: false,
               circle: false,
               polygon: {
                 shapeOptions: {
-                  opacity: 1,
-                  fillOpacity: 0.2,
-                  weight: 3,
-                  color: "#3388ff",
-                  fill: "#3388ff"
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: "#3388ff"
                 }
               },
               circlemarker: {
-                opacity: 1,
-                fillOpacity: 0.2,
-                weight: 3,
-                radius: 4,
-                color: "#3388ff",
-                fill: "#3388ff"
+                  opacity: 1,
+                  fillOpacity: 0.2,
+                  weight: 3,
+                  radius: 4,
+                  color: "#3388ff",
+                  fill: "#3388ff"
               },
               polyline: {
                 shapeOptions: {
-                  opacity: 1,
-                  weight: 3,
-                  color: "#3388ff",
-                  fill: false
+                    opacity: 1,
+                    weight: 3,
+                    color: "#3388ff",
+                    fill: false
                 }
               }
             }}
@@ -147,9 +147,9 @@ function App() {
       fetchWkt(hash);
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  
   function splitGeometry(geometry) {
-    if (geometry.type === "GeometryCollection") {
+    if (geometry.type === "GeometryCollection") { 
       return geometry.geometries;
     } else {
       return [geometry];
@@ -214,17 +214,11 @@ function App() {
     });
   }
 
-  function trimWkt(wkt)
-  {
-    return wkt.replace(/\s+/g, ' ').trim();
-  }
-
   function handleWktChange(e) {
     clearHash();
-    const wkt = trimWkt(e.target.value)
-    setWkt(wkt);
+    setWkt(e.target.value);
     processInput({
-      wkt: wkt,
+      wkt: e.target.value,
       epsg: epsg
     });
   }
@@ -251,7 +245,7 @@ function App() {
       headers: {
         "Content-Type": "application/json"
       }
-    }).catch(error => console.error(error));
+    }).catch(error => console.error(error)); 
     window.history.replaceState(null, null, "?" + hash);
     setShowUrl(true);
     ReactGA.event({
@@ -320,7 +314,7 @@ function App() {
     <div id="app">
 
       <ToastContainer className="p-3" position="top-end">
-        <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={5000} autohide className="">
+      <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={5000} autohide className="">
           <Toast.Body>Generated URL for sharing</Toast.Body>
         </Toast>
         <Toast onClose={() => setShowCopied(false)} show={showCopied} delay={5000} autohide className="">
