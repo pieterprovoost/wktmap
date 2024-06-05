@@ -214,9 +214,8 @@ function App() {
     });
   }
 
-  function trimWkt(wkt)
-  {
-    return wkt.replace(/\s+/g, ' ').trim();
+  function trimWkt(wkt) {
+    return wkt.replace(/\s+/g, " ").trim();
   }
 
   function handleWktChange(e) {
