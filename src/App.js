@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Toast, ToastContainer, Dropdown } from "react-bootstrap";
+import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Dropdown } from "react-bootstrap";
 import { MapContainer, TileLayer, FeatureGroup, LayersControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -14,8 +14,17 @@ import { EditControl } from "react-leaflet-draw";
 import { geojsonToWKT } from "@terraformer/wkt";
 import ReactGA from "react-ga4";
 import { transformInput, ValueError, getBbox } from "./wkt";
+import toast, { Toaster } from "react-hot-toast";
 
 const DEFAULT_EPSG = "4326";
+
+const formats = {
+  "wkt": "WKT",
+  "wkb": "WKB",
+  "ewkb": "EWKB",
+  // "geojson": "GeoJSON",
+  "bbox": "BBOX"
+};
 
 function createCircleMarker(feature, latlng) {
   let options = {
@@ -34,8 +43,6 @@ function App() {
   const [ewkb, setEwkb] = useState("");
   const [json, setJson] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
-  const [showUrl, setShowUrl] = useState(false);
-  const [showCopied, setShowCopied] = useState(false);
 
   const groupRef = useRef();
 
@@ -201,7 +208,7 @@ function App() {
         text = getBbox(wkt);
       }
       navigator.clipboard.writeText(text);
-      setShowCopied(true);
+      toast("Copied geometry as " + formats[format])
     }
   }
 
@@ -252,7 +259,7 @@ function App() {
       }
     }).catch(error => console.error(error)); 
     window.history.replaceState(null, null, "?" + hash);
-    setShowUrl(true);
+    toast("Generated URL for sharing")
     ReactGA.event({
       category: "wkt",
       action: "wkt_share",
@@ -318,14 +325,7 @@ function App() {
   return (
     <div id="app">
 
-      <ToastContainer className="p-3" position="top-end">
-      <Toast onClose={() => setShowUrl(false)} show={showUrl} delay={5000} autohide className="">
-          <Toast.Body>Generated URL for sharing</Toast.Body>
-        </Toast>
-        <Toast onClose={() => setShowCopied(false)} show={showCopied} delay={5000} autohide className="">
-          <Toast.Body>Copied geometry</Toast.Body>
-        </Toast>
-      </ToastContainer>
+      <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
 
       <Navbar bg="light" expand="lg">
         <Container>
@@ -351,11 +351,9 @@ function App() {
               <Dropdown className="me-2 d-inline-block">
                 <Dropdown.Toggle variant="light">Copy as</Dropdown.Toggle>
                 <Dropdown.Menu>
-                  <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("wkt")}>WKT</Dropdown.Item>
-                  <Dropdown.Item disabled={error || !wkb} onClick={() => handleCopy("wkb")}>WKB</Dropdown.Item>
-                  <Dropdown.Item disabled={error || !ewkb} onClick={() => handleCopy("ewkb")}>EWKB</Dropdown.Item>
-                  <Dropdown.Item disabled={error || !ewkb} onClick={() => handleCopy("bbox")}>BBOX</Dropdown.Item>
-                  {/* <Dropdown.Item disabled={error || !json} onClick={() => handleCopy("geojson")}>GeoJSON</Dropdown.Item> */}
+                  {
+                    Object.keys(formats).map(format => <Dropdown.Item key={format} disabled={error || !json} onClick={() => handleCopy(format)}>{formats[format]}</Dropdown.Item>)
+                  }
                 </Dropdown.Menu>
               </Dropdown>
               <Button className="me-2" variant="success" onClick={handleShare}>Share</Button>
