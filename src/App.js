@@ -11,9 +11,8 @@ import { Twitter } from "react-bootstrap-icons";
 import FullscreenControl from "./FullscreenControl";
 import CRC32 from "crc-32";
 import { EditControl } from "react-leaflet-draw";
-import { geojsonToWKT } from "@terraformer/wkt";
 import ReactGA from "react-ga4";
-import { transformInput, ValueError, getBbox } from "./wkt";
+import { transformInput, ValueError, getBbox, layerGroupToWkt } from "./wkt";
 import toast, { Toaster } from "react-hot-toast";
 
 const DEFAULT_EPSG = "4326";
@@ -155,40 +154,15 @@ function App() {
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  function splitGeometry(geometry) {
-    if (geometry.type === "GeometryCollection") { 
-      return geometry.geometries;
-    } else {
-      return [geometry];
-    }
-  }
-
   function handleDrawStop() {
-    let geometries = [];
-    groupRef.current.eachLayer(function(layer) {
-      const geo = layer.toGeoJSON();
-      if (geo.type === "Feature") {
-        geometries = geometries.concat(splitGeometry(geo.geometry));
-      } else if (geo.type === "FeatureCollection") {
-        geo.features.forEach(feature => {
-          geometries = geometries.concat(splitGeometry(feature.geometry));
-        });
-      }
-    });
-    const wktGeometries = geometries.map(geojsonToWKT);
-    let wkt;
-    if (wktGeometries.length === 1) {
-      wkt = wktGeometries[0];
-    } else if (wktGeometries.length > 1) {
-      wkt = "GEOMETRYCOLLECTION(" + wktGeometries.join(", ") + ")";
-    }
+    const wktDraw = layerGroupToWkt(groupRef.current);
     setEpsg(4326);
     clearHash();
-    if (wkt) {
-      setWkt(wkt);
+    if (wktDraw) {
+      setWkt(wktDraw);
       processInput({
         epsg: 4326,
-        wkt: wkt
+        wkt: wktDraw
       }, false);
     }
   }
@@ -259,7 +233,8 @@ function App() {
       }
     }).catch(error => console.error(error)); 
     window.history.replaceState(null, null, "?" + hash);
-    toast("Generated URL for sharing")
+    navigator.clipboard.writeText(window.location.href);
+    toast("Generated URL for sharing and copied to clipboard")
     ReactGA.event({
       category: "wkt",
       action: "wkt_share",

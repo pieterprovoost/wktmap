@@ -7,6 +7,7 @@ import { Buffer } from "buffer";
 import { cellToBoundary } from "h3-js";
 import geohash from "ngeohash";
 import quadkeytools from "quadkeytools";
+import { geojsonToWKT } from "@terraformer/wkt";
 
 const USE_WKT = false;
 
@@ -205,4 +206,34 @@ async function transformInput(input) {
 
 }
 
-export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, getBbox };
+function splitGeometry(geometry) {
+  if (geometry.type === "GeometryCollection") { 
+    return geometry.geometries;
+  } else {
+    return [geometry];
+  }
+}
+
+function layerGroupToWkt(layerGroup) {
+  let geometries = [];
+  layerGroup.eachLayer(function(layer) {
+    const geo = layer.toGeoJSON();
+    if (geo.type === "Feature") {
+      geometries = geometries.concat(splitGeometry(geo.geometry));
+    } else if (geo.type === "FeatureCollection") {
+      geo.features.forEach(feature => {
+        geometries = geometries.concat(splitGeometry(feature.geometry));
+      });
+    }
+  });
+  const wktGeometries = geometries.map(geojsonToWKT);
+  let wkt;
+  if (wktGeometries.length === 1) {
+    wkt = wktGeometries[0];
+  } else if (wktGeometries.length > 1) {
+    wkt = "GEOMETRYCOLLECTION(" + wktGeometries.join(", ") + ")";
+  }
+  return wkt;
+}
+
+export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, getBbox, layerGroupToWkt };
