@@ -8,6 +8,8 @@ import { cellToBoundary } from "h3-js";
 import geohash from "ngeohash";
 import quadkeytools from "quadkeytools";
 import { geojsonToWKT } from "@terraformer/wkt";
+import proj4 from "proj4";
+import {register} from "ol/proj/proj4";
 
 const USE_WKT = false;
 
@@ -18,11 +20,15 @@ class ValueError extends Error {
   }
 }
 
-function parseWkt(wkt) {
+function parseWkt(wkt, input) {
+  proj4.defs("EPSG:" + input.epsg, input.proj);
+  register(proj4);
+  const options = {"dataProjection": "EPSG:" + input.epsg, "featureProjection": "EPSG:" + input.epsg};
   const wktFormat = new WKT();
-  const feature = wktFormat.readFeature(wkt);
-  const geojsonFormat = new GeoJSON({});
-  const json = geojsonFormat.writeFeatureObject(feature);
+  const feature = wktFormat.readFeature(wkt, options);
+  feature.getGeometry().transform("EPSG:" + input.epsg, "EPSG:4326");
+  const geojsonFormat = new GeoJSON();
+  const json = geojsonFormat.writeFeatureObject(feature, options);
   return json;
 }
 
@@ -155,8 +161,12 @@ async function transformInput(input) {
 
   // split input, parse EPSG if in WKT
 
+  console.log(input)
+
   const { wktPart, parsedEpsg } = extractAndParseCrs(input);
-    
+
+  console.log(input)
+
   if (parsedEpsg) {
     input = {
       ...input,
@@ -166,16 +176,20 @@ async function transformInput(input) {
 
   // get proj
 
+  let epsgInt = parseInt(input.epsg);
+  if (!epsgInt || epsgInt < 1024 || epsgInt > 32767) {
+    throw new ValueError("Invalid EPSG");
+  }
   input.proj = await fetchProj(input.epsg);
   if (!input.proj) {
-    throw ValueError("EPSG not found");
+    throw new ValueError("EPSG not found");
   }
 
   // parse WKT
   
   if (input.proj && wktPart !== "") {
     try {
-      input.json = parseWkt(wktPart);
+      input.json = parseWkt(wktPart, input);
       
       // TODO: move
       const uint8 = Geometry.parse(wktPart).toWkb();

@@ -6,7 +6,6 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import { React, useState, useMemo, useEffect, useRef } from "react";
 import examples from "./examples";
-import proj4 from "proj4";
 import { Twitter } from "react-bootstrap-icons";
 import FullscreenControl from "./FullscreenControl";
 import CRC32 from "crc-32";
@@ -21,8 +20,8 @@ const formats = {
   "wkt": "WKT",
   "wkb": "WKB",
   "ewkb": "EWKB",
-  // "geojson": "GeoJSON",
-  "bbox": "BBOX"
+  "bbox": "BBOX",
+  "geojson": "GeoJSON"
 };
 
 function createCircleMarker(feature, latlng) {
@@ -286,12 +285,6 @@ function App() {
       const conf = {
         pointToLayer: createCircleMarker,
       };
-      if (spatial.proj) {
-        conf.coordsToLatLng = function(coords) {
-          const newCoords = proj4(spatial.proj, "EPSG:" + DEFAULT_EPSG, [coords[0], coords[1]]);
-          return new L.LatLng(newCoords[1], newCoords[0]);
-        }
-      }
       let newLayer = L.geoJSON(spatial.json, conf).addTo(groupRef.current);
       if (map) map.flyToBounds(newLayer.getBounds(), { duration: 0.5, maxZoom: 14 });
     }
