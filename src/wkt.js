@@ -161,11 +161,7 @@ async function transformInput(input) {
 
   // split input, parse EPSG if in WKT
 
-  console.log(input)
-
   const { wktPart, parsedEpsg } = extractAndParseCrs(input);
-
-  console.log(input)
 
   if (parsedEpsg) {
     input = {
