@@ -19,6 +19,7 @@ html, body {
   width: 100%;
   height: 450px;
   background-color: #eeeeee;
+  resize: vertical;
 }
 
 textarea {
@@ -36,4 +37,10 @@ code {
   background-color: #d4edda;
   border: 0 !important;
   border-radius: 5px;
+}
+
+#map::-webkit-resizer {
+  background-color: "none";
+  border-bottom: 4px double black;
+  padding-right: 20px;
 }

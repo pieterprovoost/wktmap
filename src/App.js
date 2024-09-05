@@ -44,10 +44,21 @@ function App() {
 
   const groupRef = useRef();
 
+  const ensureResize = function(mapRef) {
+    const resizeObserver = new ResizeObserver(() => {
+      mapRef.invalidateSize();
+    });
+    const container = document.getElementById("map");
+    if (container) {
+      resizeObserver.observe(container);
+    }
+  }
+
   const displayMap = useMemo(
     () => (
       <MapContainer
         id="map"
+        whenReady={(mapRef) => ensureResize(mapRef.target)}
         center={[10, 0]}
         zoom={1}
         scrollWheelZoom={true}
