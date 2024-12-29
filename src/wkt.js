@@ -10,6 +10,7 @@ import quadkeytools from "quadkeytools";
 import { geojsonToWKT } from "@terraformer/wkt";
 import proj4 from "proj4";
 import {register} from "ol/proj/proj4";
+import toast from "react-hot-toast";
 
 const USE_WKT = false;
 
@@ -120,6 +121,7 @@ async function transformInput(input) {
     const wkt = "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
     input.wkt = wkt;
     input.epsg = 4326;
+    toast("Converted H3 to WKT", { icon: "🤖" });
   } else if (input.wkt && input.wkt.match(/^[0-3]+$/)) {
     const quadkey = quadkeytools.bbox(input.wkt);
     const left = quadkey.min.lng;
@@ -135,6 +137,7 @@ async function transformInput(input) {
       "))";
     input.wkt = wkt;
     input.epsg = 4326;
+    toast("Converted Quadkey to WKT", { icon: "🤖" });
   } else if (input.wkt && input.wkt.match(/^(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?)$/)) {
     const [left, top, right, bottom] = input.wkt.split(",").map(x => parseFloat(x.trim()));
     const wkt = "POLYGON((" +
@@ -146,7 +149,9 @@ async function transformInput(input) {
       "))";
     input.wkt = wkt;
     input.epsg = 4326;
+    toast("Converted BBOX to WKT", { icon: "🤖" });
   } else if (input.wkt && input.wkt.match(/^[0-9a-z]+$/)) {
+    // TODO: handle WKB as well
     const [bottom, left, top, right] = geohash.decode_bbox(input.wkt);
     const wkt = "POLYGON((" +
       left + " " + top + ", " +
@@ -157,6 +162,7 @@ async function transformInput(input) {
       "))";
     input.wkt = wkt;
     input.epsg = 4326;
+    toast("Converted Geohash to WKT", { icon: "🤖" });
   }
 
   // split input, parse EPSG if in WKT
