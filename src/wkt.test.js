@@ -3,7 +3,7 @@ import { parseWkt, fetchProj, extractAndParseCrs, transformInput } from "./wkt";
 describe("parseWkt", () => {
     it("parses wkt", () => {
         const wkt = "POINT (30 10)";
-        const json = parseWkt(wkt);
+        const json = parseWkt(wkt, {epsg: 4326, proj: "+proj=longlat +datum=WGS84 +no_defs +type=crs"});
         expect(json).toEqual({
             "type": "Feature",
             "geometry": {
