@@ -118,7 +118,8 @@ function isBbox(input) {
 }
 
 function isGeohash(input) {
-  return input.wkt && input.wkt.match(/^[0-9a-z]+$/);
+    // TODO: handle WKB as well
+    return input.wkt && input.wkt.match(/^[0-9a-z]+$/);
 }
 
 function h3ToWkt(h3) {
@@ -126,12 +127,7 @@ function h3ToWkt(h3) {
   return "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
 }
 
-function quadkeyToWkt(quadkey) {
-  const bbox = quadkeytools.bbox(quadkey);
-  const left = bbox.min.lng;
-  const right = bbox.max.lng;
-  const top = bbox.max.lat;
-  const bottom = bbox.min.lat;
+function limitsToPolygon(left, right, bottom, top) {
   return "POLYGON ((" +
     left + " " + top + ", " +
     right + " " + top + ", " +
@@ -141,16 +137,18 @@ function quadkeyToWkt(quadkey) {
     "))";
 }
 
+function quadkeyToWkt(quadkey) {
+  const bbox = quadkeytools.bbox(quadkey);
+  const left = bbox.min.lng;
+  const right = bbox.max.lng;
+  const top = bbox.max.lat;
+  const bottom = bbox.min.lat;
+  return limitsToPolygon(left, right, bottom, top);
+}
+
 function geohashToWkt(hash) {
-    // TODO: handle WKB as well
     const [bottom, left, top, right] = geohash.decode_bbox(hash);
-    return "POLYGON ((" +
-      left + " " + top + ", " +
-      right + " " + top + ", " +
-      right + " " + bottom + ", " +
-      left + " " + bottom + ", " +
-      left + " " + top +
-      "))";
+    return limitsToPolygon(left, right, bottom, top);
 }
 
 function bboxToWkt(bbox) {
