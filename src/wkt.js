@@ -177,19 +177,21 @@ async function transformInput(input) {
 
   if (isH3(input)) {
     input.wkt = h3ToWkt(input.wkt);
+    input.epsg = 4326;
     toast("Converted H3 to WKT", { icon: "🤖" });
   } else if (isQuadkey(input)) {
     input.wkt = quadkeyToWkt(input.wkt);
+    input.epsg = 4326;
     toast("Converted Quadkey to WKT", { icon: "🤖" });
   } else if (isBbox(input)) {
     input.wkt = bboxToWkt(input.wkt);
+    input.epsg = 4326;
     toast("Converted BBOX to WKT", { icon: "🤖" });
   } else if (isGeohash(input)) {
     input.wkt = geohashToWkt(input.wkt);
+    input.epsg = 4326;
     toast("Converted Geohash to WKT", { icon: "🤖" });
   }
-
-  input.epsg = 4326;
 
   // split input, parse EPSG if in WKT
 
