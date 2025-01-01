@@ -105,6 +105,65 @@ function getBbox(wkt) {
   return [left, bottom, right, top].join(",");
 }
 
+function isH3(input) {
+  return input.wkt && (input.wkt.length === 15 || input.wkt.length === 16) && input.wkt.match(/^[0-9a-f]+$/i);
+}
+
+function isQuadkey(input) {
+  return input.wkt && input.wkt.match(/^[0-3]+$/);
+}
+
+function isBbox(input) {
+  return input.wkt && input.wkt.match(/^(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?)$/);
+}
+
+function isGeohash(input) {
+  return input.wkt && input.wkt.match(/^[0-9a-z]+$/);
+}
+
+function h3ToWkt(h3) {
+  const boundary = cellToBoundary(h3, true);
+  return "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
+}
+
+function quadkeyToWkt(quadkey) {
+  const bbox = quadkeytools.bbox(quadkey);
+  const left = bbox.min.lng;
+  const right = bbox.max.lng;
+  const top = bbox.max.lat;
+  const bottom = bbox.min.lat;
+  return "POLYGON ((" +
+    left + " " + top + ", " +
+    right + " " + top + ", " +
+    right + " " + bottom + ", " +
+    left + " " + bottom + ", " +
+    left + " " + top +
+    "))";
+}
+
+function geohashToWkt(hash) {
+    // TODO: handle WKB as well
+    const [bottom, left, top, right] = geohash.decode_bbox(hash);
+    return "POLYGON ((" +
+      left + " " + top + ", " +
+      right + " " + top + ", " +
+      right + " " + bottom + ", " +
+      left + " " + bottom + ", " +
+      left + " " + top +
+      "))";
+}
+
+function bboxToWkt(bbox) {
+  const [left, top, right, bottom] = bbox.split(",").map(x => parseFloat(x.trim()));
+  return "POLYGON ((" +
+    left + " " + top + ", " +
+    right + " " + top + ", " +
+    right + " " + bottom + ", " +
+    left + " " + bottom + ", " +
+    left + " " + top +
+    "))";
+}
+
 async function transformInput(input) {
   input = {
     ...input,
@@ -114,56 +173,23 @@ async function transformInput(input) {
     ewkb: null
   }
 
-  // handle H3, geohash, bbox
+  // handle alternate input formats
 
-  if (input.wkt && (input.wkt.length === 15 || input.wkt.length === 16) && input.wkt.match(/^[0-9a-f]+$/i)) {
-    const boundary = cellToBoundary(input.wkt, true);
-    const wkt = "POLYGON ((" + boundary.map(x => x[0] + " " + x[1]).join(",") + "))";
-    input.wkt = wkt;
-    input.epsg = 4326;
+  if (isH3(input)) {
+    input.wkt = h3ToWkt(input.wkt);
     toast("Converted H3 to WKT", { icon: "🤖" });
-  } else if (input.wkt && input.wkt.match(/^[0-3]+$/)) {
-    const quadkey = quadkeytools.bbox(input.wkt);
-    const left = quadkey.min.lng;
-    const right = quadkey.max.lng;
-    const top = quadkey.max.lat;
-    const bottom = quadkey.min.lat;
-    const wkt = "POLYGON((" +
-      left + " " + top + ", " +
-      right + " " + top + ", " +
-      right + " " + bottom + ", " +
-      left + " " + bottom + ", " +
-      left + " " + top +
-      "))";
-    input.wkt = wkt;
-    input.epsg = 4326;
+  } else if (isQuadkey(input)) {
+    input.wkt = quadkeyToWkt(input.wkt);
     toast("Converted Quadkey to WKT", { icon: "🤖" });
-  } else if (input.wkt && input.wkt.match(/^(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?),\s?(-?\d+(\.\d+)?)$/)) {
-    const [left, top, right, bottom] = input.wkt.split(",").map(x => parseFloat(x.trim()));
-    const wkt = "POLYGON((" +
-      left + " " + top + ", " +
-      right + " " + top + ", " +
-      right + " " + bottom + ", " +
-      left + " " + bottom + ", " +
-      left + " " + top +
-      "))";
-    input.wkt = wkt;
-    input.epsg = 4326;
+  } else if (isBbox(input)) {
+    input.wkt = bboxToWkt(input.wkt);
     toast("Converted BBOX to WKT", { icon: "🤖" });
-  } else if (input.wkt && input.wkt.match(/^[0-9a-z]+$/)) {
-    // TODO: handle WKB as well
-    const [bottom, left, top, right] = geohash.decode_bbox(input.wkt);
-    const wkt = "POLYGON((" +
-      left + " " + top + ", " +
-      right + " " + top + ", " +
-      right + " " + bottom + ", " +
-      left + " " + bottom + ", " +
-      left + " " + top +
-      "))";
-    input.wkt = wkt;
-    input.epsg = 4326;
+  } else if (isGeohash(input)) {
+    input.wkt = geohashToWkt(input.wkt);
     toast("Converted Geohash to WKT", { icon: "🤖" });
   }
+
+  input.epsg = 4326;
 
   // split input, parse EPSG if in WKT
 
