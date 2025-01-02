@@ -193,7 +193,7 @@ function App() {
         text = getBbox(wkt);
       }
       navigator.clipboard.writeText(text);
-      toast("Copied geometry as " + formats[format])
+      toast("Copied geometry as " + formats[format], { icon: "📎" })
     }
   }
 

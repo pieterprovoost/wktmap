@@ -262,6 +262,7 @@ function layerGroupToWkt(layerGroup) {
   let geometries = [];
   let fixed = false;
   layerGroup.eachLayer(function(layer) {
+    console.log(layer)
     const geo = layer.toGeoJSON();
     const before = JSON.stringify(geo.geometry);
     rewind(geo.geometry);
@@ -281,7 +282,7 @@ function layerGroupToWkt(layerGroup) {
     }
   });
   if (fixed) {
-    toast("Fixed winding order");
+    toast("Fixed winding order", { icon: "↪" });
   }
   const wktGeometries = geometries.map(geojsonToWKT);
   let wkt;
