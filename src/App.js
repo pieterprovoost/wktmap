@@ -55,14 +55,15 @@ function App() {
   }
 
   const displayMap = useMemo(
-    () => (
-      <MapContainer
+    () => {
+      return <MapContainer
         id="map"
         whenReady={(mapRef) => ensureResize(mapRef.target)}
         center={[10, 0]}
         zoom={1}
         scrollWheelZoom={true}
-        ref={setMap}>
+        ref={setMap}
+        >
         <LayersControl>
           <LayersControl.BaseLayer checked name="OpenStreetMap">
             <TileLayer
@@ -136,7 +137,7 @@ function App() {
           />
         </FeatureGroup>
       </MapContainer>
-    ), [] // eslint-disable-line react-hooks/exhaustive-deps
+    }, [] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {

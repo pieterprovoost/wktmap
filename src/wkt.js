@@ -12,6 +12,7 @@ import proj4 from "proj4";
 import {register} from "ol/proj/proj4";
 import toast from "react-hot-toast";
 import rewind from "@mapbox/geojson-rewind";
+import L from "leaflet";
 
 const USE_WKT = false;
 
@@ -259,13 +260,17 @@ function splitGeometry(geometry) {
 
 function layerGroupToWkt(layerGroup) {
   let geometries = [];
+  let fixed = false;
   layerGroup.eachLayer(function(layer) {
     const geo = layer.toGeoJSON();
     const before = JSON.stringify(geo.geometry);
     rewind(geo.geometry);
     const after = JSON.stringify(geo.geometry);
     if (before !== after) {
-      toast("Fixed winding order");
+      fixed = true;
+      layerGroup.removeLayer(layer);
+      const updatedLayer = L.geoJSON(geo);
+      layerGroup.addLayer(updatedLayer);
     }
     if (geo.type === "Feature") {
       geometries = geometries.concat(splitGeometry(geo.geometry));
@@ -275,12 +280,15 @@ function layerGroupToWkt(layerGroup) {
       });
     }
   });
+  if (fixed) {
+    toast("Fixed winding order");
+  }
   const wktGeometries = geometries.map(geojsonToWKT);
   let wkt;
   if (wktGeometries.length === 1) {
     wkt = wktGeometries[0];
   } else if (wktGeometries.length > 1) {
-    wkt = "GEOMETRYCOLLECTION(" + wktGeometries.join(", ") + ")";
+    wkt = "GEOMETRYCOLLECTION (" + wktGeometries.join(", ") + ")";
   }
   return wkt;
 }
