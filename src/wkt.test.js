@@ -87,4 +87,11 @@ describe("handleOtherFormats", () => {
         const message = handleOtherFormats(input);
         expect(message).toEqual("Converted Geohash to WKT");
     });
+    it("handles WKB", async () => {
+        const input = {
+            wkt: "01010000001343723271CB094047E4BB94BA9A4940"
+        };
+        const message = handleOtherFormats(input);
+        expect(message).toEqual("Converted WKB to WKT");
+    });
 });

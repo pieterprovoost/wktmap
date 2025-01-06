@@ -120,8 +120,11 @@ function isBbox(input) {
 }
 
 function isGeohash(input) {
-    // TODO: handle WKB as well
-    return input.wkt && input.wkt.match(/^[0-9a-z]+$/);
+  return input.wkt && input.wkt.length <= 10 && input.wkt.match(/^[0-9a-z]+$/);
+}
+
+function isWkb(input) {
+  return input.wkt && input.wkt.match(/^[0-9a-fA-F]+$/);
 }
 
 function h3ToWkt(h3) {
@@ -164,6 +167,12 @@ function bboxToWkt(bbox) {
     "))";
 }
 
+function wkbToWkt(wkb) {
+  const buffer = Buffer.from(wkb, "hex");
+  const geometry = Geometry.parse(buffer);
+  return geometry.toWkt();
+}
+
 function handleOtherFormats(input) {
   if (isH3(input)) {
     input.wkt = h3ToWkt(input.wkt);
@@ -181,6 +190,10 @@ function handleOtherFormats(input) {
     input.wkt = geohashToWkt(input.wkt);
     input.epsg = 4326;
     return("Converted Geohash to WKT");
+  } else if (isWkb(input)) {
+    input.wkt = wkbToWkt(input.wkt);
+    input.epsg = 4326;
+    return("Converted WKB to WKT");
   } else {
     return null;
   }
