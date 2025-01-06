@@ -1,4 +1,4 @@
-import { parseWkt, fetchProj, extractAndParseCrs, transformInput } from "./wkt";
+import { parseWkt, fetchProj, extractAndParseCrs, transformInput, handleOtherFormats } from "./wkt";
 
 describe("parseWkt", () => {
     it("parses wkt", () => {
@@ -55,5 +55,36 @@ describe("transformInput", () => {
     it("transforms to ewkb", async () => {
         let output = await transformInput(input);
         expect(output.ewkb).toEqual("0107000020110F000001000000010200000002000000000000608285614100000000B1955541000000E0118C6141000000408D695541");
+    });
+});
+
+describe("handleOtherFormats", () => {
+    it("handles H3", async () => {
+        const input = {
+            wkt: "83194dfffffffff"
+        };
+        const message = handleOtherFormats(input);
+        expect(message).toEqual("Converted H3 to WKT");
+    });
+    it("handles Quadkey", async () => {
+        const input = {
+            wkt: "012"
+        };
+        const message = handleOtherFormats(input);
+        expect(message).toEqual("Converted Quadkey to WKT");
+    });
+    it("handles BBOX", async () => {
+        const input = {
+            wkt: "40.7,-74,40.8,-73"
+        };
+        const message = handleOtherFormats(input);
+        expect(message).toEqual("Converted BBOX to WKT");
+    });
+    it("handles Geohash", async () => {
+        const input = {
+            wkt: "u147"
+        };
+        const message = handleOtherFormats(input);
+        expect(message).toEqual("Converted Geohash to WKT");
     });
 });

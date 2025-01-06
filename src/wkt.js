@@ -164,6 +164,28 @@ function bboxToWkt(bbox) {
     "))";
 }
 
+function handleOtherFormats(input) {
+  if (isH3(input)) {
+    input.wkt = h3ToWkt(input.wkt);
+    input.epsg = 4326;
+    return("Converted H3 to WKT");
+  } else if (isQuadkey(input)) {
+    input.wkt = quadkeyToWkt(input.wkt);
+    input.epsg = 4326;
+    return("Converted Quadkey to WKT");
+  } else if (isBbox(input)) {
+    input.wkt = bboxToWkt(input.wkt);
+    input.epsg = 4326;
+    return("Converted BBOX to WKT");
+  } else if (isGeohash(input)) {
+    input.wkt = geohashToWkt(input.wkt);
+    input.epsg = 4326;
+    return("Converted Geohash to WKT");
+  } else {
+    return null;
+  }
+}
+
 async function transformInput(input) {
   input = {
     ...input,
@@ -175,22 +197,9 @@ async function transformInput(input) {
 
   // handle alternate input formats
 
-  if (isH3(input)) {
-    input.wkt = h3ToWkt(input.wkt);
-    input.epsg = 4326;
-    toast("Converted H3 to WKT", { icon: "🤖" });
-  } else if (isQuadkey(input)) {
-    input.wkt = quadkeyToWkt(input.wkt);
-    input.epsg = 4326;
-    toast("Converted Quadkey to WKT", { icon: "🤖" });
-  } else if (isBbox(input)) {
-    input.wkt = bboxToWkt(input.wkt);
-    input.epsg = 4326;
-    toast("Converted BBOX to WKT", { icon: "🤖" });
-  } else if (isGeohash(input)) {
-    input.wkt = geohashToWkt(input.wkt);
-    input.epsg = 4326;
-    toast("Converted Geohash to WKT", { icon: "🤖" });
+  const message = handleOtherFormats(input);
+  if (message) {
+    toast(message, { icon: "🤖" });
   }
 
   // split input, parse EPSG if in WKT
@@ -294,4 +303,4 @@ function layerGroupToWkt(layerGroup) {
   return wkt;
 }
 
-export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, getBbox, layerGroupToWkt };
+export { parseWkt, transformInput, ValueError, fetchProj, extractAndParseCrs, getBbox, layerGroupToWkt, handleOtherFormats };
