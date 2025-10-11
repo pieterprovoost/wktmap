@@ -157,7 +157,16 @@ function App() {
     }
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
-    if (Object.keys(params).length === 0) {
+    if (params.wkt || params.epsg) {
+      const paramWkt = params.wkt || "";
+      const paramEpsg = params.epsg || DEFAULT_EPSG;
+      setWkt(paramWkt);
+      setEpsg(paramEpsg);
+      processInput({
+        wkt: paramWkt,
+        epsg: paramEpsg
+      });
+    } else if (Object.keys(params).length === 0) {
       loadExample();
     } else {
       const hash = Object.keys(params)[0];
