@@ -329,7 +329,7 @@ function App() {
       <Container className="mt-3 mb-3">
 
         <Row>
-          <Col lg={true} className="mb-3">
+          <Col lg={true} className="mb-3 col-12 col-md-12 col-lg-7">
             <Form.Group className="mb-3" controlId="wkt">
               <Form.Label>WKT</Form.Label>
               <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
@@ -348,7 +348,7 @@ function App() {
               <Button className="me-2" variant="success" onClick={handleShare}>Share</Button>
             </div>
           </Col>
-          <Col lg={true} className="mb-3">
+          <Col lg={true} className="mb-3 col-12 col-md-12 col-lg-5">
             <Form.Group className="mb-3" controlId="epsg">
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
