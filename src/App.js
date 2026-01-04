@@ -1,6 +1,6 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Navbar, Container, Button, Form, Row, Col, Alert, InputGroup, Dropdown } from "react-bootstrap";
-import { MapContainer, TileLayer, FeatureGroup, LayersControl } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup, LayersControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -15,6 +15,7 @@ import { transformInput, ValueError, getBbox, layerGroupToWkt } from "./wkt";
 import toast, { Toaster } from "react-hot-toast";
 
 const DEFAULT_EPSG = "4326";
+const DEFAULT_BASELAYER = "OpenStreetMap";
 
 const formats = {
   "wkt": "WKT",
@@ -31,6 +32,38 @@ function createCircleMarker(feature, latlng) {
   return L.circleMarker(latlng, options);
 }
 
+function BaseLayerController({ baseLayer, onBaseLayerChange }) {
+  const map = useMap();
+
+  useEffect(() => {
+    function updateUrlWithBaseLayer(layerName) {
+      const url = new URL(window.location);
+      const params = new URLSearchParams(url.search);
+      if (layerName === DEFAULT_BASELAYER) {
+        params.delete("baselayer");
+      } else {
+        params.set("baselayer", layerName);
+      }
+      url.search = params.toString();
+      window.history.replaceState(null, null, url);
+    }
+
+    function handleBaseLayerChange(e) {
+      const layerName = e.name;
+      onBaseLayerChange(layerName);
+      updateUrlWithBaseLayer(layerName);
+    }
+
+    map.on("baselayerchange", handleBaseLayerChange);
+
+    return () => {
+      map.off("baselayerchange", handleBaseLayerChange);
+    };
+  }, [map, onBaseLayerChange]);
+
+  return null;
+}
+
 function App() {
 
   const [map, setMap] = useState(null);
@@ -41,8 +74,20 @@ function App() {
   const [ewkb, setEwkb] = useState("");
   const [json, setJson] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
+  const [baseLayer, setBaseLayer] = useState(DEFAULT_BASELAYER);
 
   const groupRef = useRef();
+
+  useEffect(() => {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    if (params.baselayer) {
+      const validLayers = ["OpenStreetMap", "Humanitarian", "Esri World Imagery"];
+      if (validLayers.includes(params.baselayer)) {
+        setBaseLayer(params.baselayer);
+      }
+    }
+  }, []);
 
   const ensureResize = function(mapRef) {
     const resizeObserver = new ResizeObserver(() => {
@@ -65,19 +110,19 @@ function App() {
         ref={setMap}
         >
         <LayersControl>
-          <LayersControl.BaseLayer checked name="OpenStreetMap">
+          <LayersControl.BaseLayer checked={baseLayer === "OpenStreetMap"} name="OpenStreetMap">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
           </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Humanitarian">
+          <LayersControl.BaseLayer checked={baseLayer === "Humanitarian"} name="Humanitarian">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
               url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
             />
           </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Esri World Imagery">
+          <LayersControl.BaseLayer checked={baseLayer === "Esri World Imagery"} name="Esri World Imagery">
             <TileLayer
               attribution='Esri, Maxar, Earthstar Geographics, and the GIS User Community'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -90,6 +135,7 @@ function App() {
             />
           </LayersControl.Overlay>
         </LayersControl>
+        <BaseLayerController baseLayer={baseLayer} onBaseLayerChange={setBaseLayer} />
         <FullscreenControl />
         <FeatureGroup ref={groupRef}>
           <EditControl
@@ -137,7 +183,7 @@ function App() {
           />
         </FeatureGroup>
       </MapContainer>
-    }, [] // eslint-disable-line react-hooks/exhaustive-deps
+    }, [baseLayer] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -157,6 +203,7 @@ function App() {
     }
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
+    
     if (params.wkt || params.epsg) {
       const paramWkt = params.wkt || "";
       const paramEpsg = params.epsg || DEFAULT_EPSG;
@@ -166,11 +213,17 @@ function App() {
         wkt: paramWkt,
         epsg: paramEpsg
       });
-    } else if (Object.keys(params).length === 0) {
+    } else if (Object.keys(params).length === 0 || (Object.keys(params).length === 1 && params.baselayer)) {
       loadExample();
     } else {
-      const hash = Object.keys(params)[0];
-      fetchWkt(hash);
+      const queryString = window.location.search.substring(1);
+      if (queryString) {
+        const parts = queryString.split("&");
+        const hashPart = parts.find(part => !part.includes("=") && part !== "");
+        if (hashPart) {
+          fetchWkt(hashPart);
+        }
+      }
     }
   }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
   
@@ -252,7 +305,11 @@ function App() {
         "Content-Type": "application/json"
       }
     }).catch(error => console.error(error)); 
-    window.history.replaceState(null, null, "?" + hash);
+    let url = "?" + hash;
+    if (baseLayer !== DEFAULT_BASELAYER) {
+      url += "&baselayer=" + encodeURIComponent(baseLayer);
+    }
+    window.history.replaceState(null, null, url);
     navigator.clipboard.writeText(window.location.href);
     toast("Generated URL for sharing and copied to clipboard")
     ReactGA.event({
@@ -296,7 +353,13 @@ function App() {
 
   function clearHash() {
     const url = new URL(window.location);
-    url.search = "";
+    const currentParams = new URLSearchParams(url.search);
+    const params = new URLSearchParams();
+    const baselayerParam = currentParams.get("baselayer") || (baseLayer !== DEFAULT_BASELAYER ? baseLayer : null);
+    if (baselayerParam) {
+      params.set("baselayer", baselayerParam);
+    }
+    url.search = params.toString();
     window.history.replaceState(null, null, url);
   }
 
