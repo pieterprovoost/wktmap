@@ -330,25 +330,12 @@ function App() {
 
         <Row>
           <Col className="mb-3 col-12 col-md-12 col-lg-7">
-            <Form.Group className="mb-3" controlId="wkt">
+            <Form.Group className="mb-0" controlId="wkt">
               <Form.Label>WKT</Form.Label>
               <Form.Control className="font-monospace" as="textarea" rows={8} value={wkt} onChange={handleWktChange} />
             </Form.Group>
-            <div className="d-flex d-md-block justify-content-between">
-              <Button className="me-2" variant="light" onClick={loadExample}>Load example</Button>
-              <Button className="me-2" variant="warning" onClick={handleWktClear}>Clear</Button>
-              <Dropdown className="me-2 d-inline-block">
-                <Dropdown.Toggle variant="light">Copy as</Dropdown.Toggle>
-                <Dropdown.Menu>
-                  {
-                    Object.keys(formats).map(format => <Dropdown.Item key={format} disabled={error || !json} onClick={() => handleCopy(format)}>{formats[format]}</Dropdown.Item>)
-                  }
-                </Dropdown.Menu>
-              </Dropdown>
-              <Button className="me-2" variant="success" onClick={handleShare}>Share</Button>
-            </div>
           </Col>
-          <Col className="mb-3 col-12 col-md-12 col-lg-5">
+          <Col className="mb-1 col-12 col-md-12 col-lg-5">
             <Form.Group className="mb-3" controlId="epsg">
               <Form.Label>EPSG</Form.Label>
               <InputGroup>
@@ -359,6 +346,23 @@ function App() {
             {
               error && <Alert variant="danger">{error}</Alert>
             }
+          </Col>
+        </Row>
+        <Row>
+          <Col className="mb-3 col-12 col-md-12 col-lg-7">
+            <div className="d-flex d-md-block justify-content-between">
+                <Button className="me-2" variant="light" onClick={loadExample}>Load example</Button>
+                <Button className="me-2" variant="warning" onClick={handleWktClear}>Clear</Button>
+                <Dropdown className="me-2 d-inline-block">
+                  <Dropdown.Toggle variant="light">Copy as</Dropdown.Toggle>
+                  <Dropdown.Menu>
+                    {
+                      Object.keys(formats).map(format => <Dropdown.Item key={format} disabled={error || !json} onClick={() => handleCopy(format)}>{formats[format]}</Dropdown.Item>)
+                    }
+                  </Dropdown.Menu>
+                </Dropdown>
+                <Button className="me-2" variant="success" onClick={handleShare}>Share</Button>
+              </div>
           </Col>
         </Row>
       </Container>
